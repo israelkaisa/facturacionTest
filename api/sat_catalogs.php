@@ -5,7 +5,8 @@ require_once '../src/config/config.php';
 
 $catalogs = [
     'cfdi_uses' => SAT_USO_CFDI,
-    'payment_methods' => SAT_METODO_PAGO
+    'payment_methods' => SAT_METODO_PAGO,
+    'payment_forms' => SAT_FORMA_PAGO
 ];
 
 echo json_encode(['status' => 'success', 'data' => $catalogs]);

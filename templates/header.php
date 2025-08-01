@@ -21,9 +21,10 @@
             <ul class="right hide-on-med-and-down">
                 <li><a href="index.php?page=invoices">Facturas</a></li>
                 <li><a href="index.php?page=quotes">Cotizaciones</a></li>
-                <li><a href="index.php?page=sales_orders">Órdenes de Venta</a></li>
+                <li><a href="index.php?page=orders">Órdenes de Venta</a></li>
                 <li><a href="index.php?page=products">Productos</a></li>
                 <li><a href="index.php?page=customers">Clientes</a></li>
+                <li><a href="index.php?page=logout" class="btn red lighten-1">Logout</a></li>
             </ul>
         </div>
     </nav>
@@ -31,9 +32,11 @@
     <ul class="sidenav" id="mobile-nav">
         <li><a href="index.php?page=invoices">Facturas</a></li>
         <li><a href="index.php?page=quotes">Cotizaciones</a></li>
-        <li><a href="index.php?page=sales_orders">Órdenes de Venta</a></li>
+        <li><a href="index.php?page=orders">Órdenes de Venta</a></li>
         <li><a href="index.php?page=products">Productos</a></li>
         <li><a href="index.php?page=customers">Clientes</a></li>
+        <li><div class="divider"></div></li>
+        <li><a href="index.php?page=logout">Cerrar Sesión</a></li>
     </ul>
 </header>
 

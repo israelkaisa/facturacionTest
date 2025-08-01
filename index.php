@@ -1,25 +1,49 @@
 <?php
+session_start();
+
 // Include configuration
 require_once 'src/config/config.php';
 
-// Include header
-require_once 'templates/header.php';
+$page = $_GET['page'] ?? 'invoices'; // Default page is now invoices
+$is_logged_in = isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true;
 
-// Simple router
-if (isset($_GET['page'])) {
-    $page = $_GET['page'];
+// Handle logout action
+if ($page === 'logout') {
+    session_unset();
+    session_destroy();
+    header('Location: index.php?page=login');
+    exit();
+}
+
+// If user is not logged in, they can only access the login page
+if (!$is_logged_in && $page !== 'login') {
+    header('Location: index.php?page=login');
+    exit();
+}
+
+// If user is logged in, they cannot access the login page
+if ($is_logged_in && $page === 'login') {
+    header('Location: index.php?page=invoices');
+    exit();
+}
+
+
+// Load templates
+if ($page === 'login') {
+    // The login page has its own self-contained template
+    require_once 'templates/login.php';
+} else {
+    // All other pages use the standard header/footer
+    require_once 'templates/header.php';
+
     $file = 'templates/' . $page . '.php';
     if (file_exists($file)) {
         require_once $file;
     } else {
-        // Show a 404 page or a default page
-        echo '<h4>Página no encontrada</h4>';
+        // A better 404 page for logged-in users
+        echo '<h4>Página no encontrada</h4><p>La página que buscas no existe o ha sido movida.</p>';
     }
-} else {
-    // Default page
-    echo '<h4>Bienvenido al Sistema de Facturación</h4>';
-}
 
-// Include footer
-require_once 'templates/footer.php';
+    require_once 'templates/footer.php';
+}
 ?>

@@ -25,6 +25,7 @@
                              <h5>Datos Fiscales:</h5>
                              <p><strong>Uso de CFDI:</strong> <span id="view-cfdi-use"></span></p>
                              <p><strong>Método de Pago:</strong> <span id="view-payment-method"></span></p>
+                             <p><strong>Forma de Pago:</strong> <span id="view-payment-form"></span></p>
                              <p><strong>Folio Fiscal (UUID):</strong> <span id="view-uuid">N/A</span></p>
                         </div>
                     </div>

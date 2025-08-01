@@ -313,6 +313,7 @@ async function handleInvoiceFormPage() {
     const customerSelect = document.getElementById('invoice-customer');
     const cfdiUseSelect = document.getElementById('invoice-cfdi-use');
     const paymentMethodSelect = document.getElementById('invoice-payment-method');
+    const paymentFormSelect = document.getElementById('invoice-payment-form');
     const itemsContainer = document.getElementById('invoice-items');
     const addItemBtn = document.getElementById('add-item-btn');
     const itemTemplate = document.getElementById('invoice-item-template');
@@ -350,6 +351,9 @@ async function handleInvoiceFormPage() {
                 }
                 for (const [key, value] of Object.entries(satResult.data.payment_methods)) {
                     paymentMethodSelect.innerHTML += `<option value="${key}">${key} - ${value}</option>`;
+                }
+                 for (const [key, value] of Object.entries(satResult.data.payment_forms)) {
+                    paymentFormSelect.innerHTML += `<option value="${key}">${key} - ${value}</option>`;
                 }
             }
 
@@ -462,6 +466,7 @@ async function handleInvoiceFormPage() {
             type: 'invoice', // Hardcoded for now
             cfdi_use: formData.get('cfdi_use'),
             payment_method: formData.get('payment_method'),
+            payment_form: formData.get('payment_form'),
             due_date: formData.get('due_date'),
             subtotal: subtotal,
             tax: tax,
@@ -522,7 +527,329 @@ document.addEventListener('DOMContentLoaded', function() {
     if (document.getElementById('invoice-view-page')) {
         handleInvoiceViewPage();
     }
+    if (document.getElementById('quotes-page')) {
+        handleQuotesPage();
+    }
+    if (document.getElementById('quote-form-page')) {
+        handleQuoteFormPage();
+    }
+    if (document.getElementById('orders-page')) {
+        handleOrdersPage();
+    }
+    if (document.getElementById('order-form-page')) {
+        handleOrderFormPage();
+    }
 });
+
+/**
+ * Handles logic for the Quotes List page
+ */
+function handleQuotesPage() {
+    const apiUrl = `${API_BASE_URL}documents.php?type=quote`;
+    const tableBody = document.getElementById('quotes-table-body');
+
+    const loadQuotes = async () => {
+        try {
+            const response = await fetch(apiUrl);
+            const result = await response.json();
+            if (result.status === 'success') {
+                tableBody.innerHTML = result.data.map(quote => `
+                    <tr>
+                        <td>${quote.folio}</td>
+                        <td>${quote.customer_name}</td>
+                        <td>${new Date(quote.created_at).toLocaleDateString()}</td>
+                        <td>$${parseFloat(quote.total).toFixed(2)}</td>
+                        <td><span class="new badge blue" data-badge-caption="${quote.status}"></span></td>
+                        <td>
+                            <a href="index.php?page=document_view&id=${quote.id}" class="btn-small waves-effect waves-light"><i class="material-icons">visibility</i></a>
+                        </td>
+                    </tr>
+                `).join('');
+                M.AutoInit();
+            }
+        } catch (error) {
+            console.error('Error loading quotes:', error);
+        }
+    };
+    loadQuotes();
+}
+
+/**
+ * Handles logic for the Quote Form page
+ */
+async function handleQuoteFormPage() {
+    // This is a generic form handler that can be reused.
+    // For now, I'll copy it, but in a refactor, this could be a single function.
+    const form = document.getElementById('form-quote');
+    const customerSelect = document.getElementById('quote-customer');
+    const itemsContainer = document.getElementById('quote-items');
+    const addItemBtn = document.getElementById('add-item-btn');
+    const itemTemplate = document.getElementById('quote-item-template');
+    let products = [];
+
+    const fetchData = async () => {
+        const [customersRes, productsRes] = await Promise.all([
+            fetch(`${API_BASE_URL}customers.php`),
+            fetch(`${API_BASE_URL}products.php`)
+        ]);
+        const customersResult = await customersRes.json();
+        const productsResult = await productsRes.json();
+        if (customersResult.status === 'success') {
+            customersResult.data.forEach(c => {
+                customerSelect.innerHTML += `<option value="${c.id}">${c.name} (${c.rfc})</option>`;
+            });
+        }
+        if (productsResult.status === 'success') {
+            products = productsResult.data;
+        }
+        M.FormSelect.init(document.querySelectorAll('select'));
+    };
+
+    const addItemRow = () => {
+        const templateContent = itemTemplate.content.cloneNode(true);
+        const productSelect = templateContent.querySelector('.product-select');
+        products.forEach(p => {
+            productSelect.innerHTML += `<option value="${p.id}" data-price="${p.price}" data-tax-rate="${p.tax_rate}">${p.name}</option>`;
+        });
+        itemsContainer.appendChild(templateContent);
+        M.FormSelect.init(itemsContainer.querySelectorAll('select:last-of-type'));
+    };
+
+    const updateTotals = () => {
+        let subtotal = 0;
+        let tax = 0;
+        itemsContainer.querySelectorAll('.item-row').forEach(row => {
+            const quantity = parseFloat(row.querySelector('.quantity').value) || 0;
+            const price = parseFloat(row.querySelector('.price').value) || 0;
+            const productSelect = row.querySelector('.product-select');
+            const selectedOption = productSelect.options[productSelect.selectedIndex];
+            const taxRate = parseFloat(selectedOption.dataset.taxRate) || 0;
+            const rowTotal = quantity * price;
+            const rowTax = rowTotal * taxRate;
+            row.querySelector('.total').value = rowTotal.toFixed(2);
+            subtotal += rowTotal;
+            tax += rowTax;
+        });
+        document.getElementById('quote-subtotal').textContent = `$${subtotal.toFixed(2)}`;
+        document.getElementById('quote-tax').textContent = `$${tax.toFixed(2)}`;
+        document.getElementById('quote-total').textContent = `$${(subtotal + tax).toFixed(2)}`;
+    };
+
+    addItemBtn.addEventListener('click', addItemRow);
+    itemsContainer.addEventListener('click', e => {
+        if (e.target.closest('.remove-item-btn')) {
+            e.target.closest('.item-row').remove();
+            updateTotals();
+        }
+    });
+    itemsContainer.addEventListener('change', e => {
+        if (e.target.classList.contains('product-select')) {
+            const selectedOption = e.target.options[e.target.selectedIndex];
+            const price = selectedOption.dataset.price || 0;
+            e.target.closest('.item-row').querySelector('.price').value = parseFloat(price).toFixed(2);
+        }
+        updateTotals();
+    });
+    itemsContainer.addEventListener('input', e => {
+        if (e.target.classList.contains('quantity')) {
+            updateTotals();
+        }
+    });
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const subtotal = parseFloat(document.getElementById('quote-subtotal').textContent.replace('$', ''));
+        const tax = parseFloat(document.getElementById('quote-tax').textContent.replace('$', ''));
+        const total = parseFloat(document.getElementById('quote-total').textContent.replace('$', ''));
+        const items = [];
+        itemsContainer.querySelectorAll('.item-row').forEach(row => {
+            const productId = row.querySelector('.product-select').value;
+            const product = products.find(p => p.id == productId);
+            const quantity = parseFloat(row.querySelector('.quantity').value);
+            const price = parseFloat(row.querySelector('.price').value);
+            if (product) {
+                items.push({ id: productId, quantity, price, tax: (quantity * price) * product.tax_rate, total: quantity * price });
+            }
+        });
+        const formData = new FormData(form);
+        const data = {
+            customer_id: formData.get('customer_id'),
+            type: 'quote',
+            due_date: formData.get('due_date'),
+            subtotal, tax, total, items
+        };
+        const response = await fetch(`${API_BASE_URL}documents.php`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            M.toast({ html: 'Cotización creada con éxito!' });
+            window.location.href = 'index.php?page=quotes';
+        } else {
+            M.toast({ html: `Error: ${result.message}` });
+        }
+    });
+
+    await fetchData();
+    addItemRow();
+    M.Datepicker.init(document.querySelectorAll('.datepicker'), { format: 'yyyy-mm-dd', autoClose: true });
+}
+
+/**
+ * Handles logic for the Orders List page
+ */
+function handleOrdersPage() {
+    const apiUrl = `${API_BASE_URL}documents.php?type=order`;
+    const tableBody = document.getElementById('orders-table-body');
+
+    const loadOrders = async () => {
+        try {
+            const response = await fetch(apiUrl);
+            const result = await response.json();
+            if (result.status === 'success') {
+                tableBody.innerHTML = result.data.map(order => `
+                    <tr>
+                        <td>${order.folio}</td>
+                        <td>${order.customer_name}</td>
+                        <td>${new Date(order.created_at).toLocaleDateString()}</td>
+                        <td>$${parseFloat(order.total).toFixed(2)}</td>
+                        <td><span class="new badge green" data-badge-caption="${order.status}"></span></td>
+                        <td>
+                            <a href="index.php?page=document_view&id=${order.id}" class="btn-small waves-effect waves-light"><i class="material-icons">visibility</i></a>
+                        </td>
+                    </tr>
+                `).join('');
+                M.AutoInit();
+            }
+        } catch (error) {
+            console.error('Error loading orders:', error);
+        }
+    };
+    loadOrders();
+}
+
+/**
+ * Handles logic for the Order Form page
+ */
+async function handleOrderFormPage() {
+    const form = document.getElementById('form-order');
+    const customerSelect = document.getElementById('order-customer');
+    const itemsContainer = document.getElementById('order-items');
+    const addItemBtn = document.getElementById('add-item-btn');
+    const itemTemplate = document.getElementById('order-item-template');
+    let products = [];
+
+    const fetchData = async () => {
+        const [customersRes, productsRes] = await Promise.all([
+            fetch(`${API_BASE_URL}customers.php`),
+            fetch(`${API_BASE_URL}products.php`)
+        ]);
+        const customersResult = await customersRes.json();
+        const productsResult = await productsRes.json();
+        if (customersResult.status === 'success') {
+            customersResult.data.forEach(c => {
+                customerSelect.innerHTML += `<option value="${c.id}">${c.name} (${c.rfc})</option>`;
+            });
+        }
+        if (productsResult.status === 'success') {
+            products = productsResult.data;
+        }
+        M.FormSelect.init(document.querySelectorAll('select'));
+    };
+
+    const addItemRow = () => {
+        const templateContent = itemTemplate.content.cloneNode(true);
+        const productSelect = templateContent.querySelector('.product-select');
+        products.forEach(p => {
+            productSelect.innerHTML += `<option value="${p.id}" data-price="${p.price}" data-tax-rate="${p.tax_rate}">${p.name}</option>`;
+        });
+        itemsContainer.appendChild(templateContent);
+        M.FormSelect.init(itemsContainer.querySelectorAll('select:last-of-type'));
+    };
+
+    const updateTotals = () => {
+        let subtotal = 0;
+        let tax = 0;
+        itemsContainer.querySelectorAll('.item-row').forEach(row => {
+            const quantity = parseFloat(row.querySelector('.quantity').value) || 0;
+            const price = parseFloat(row.querySelector('.price').value) || 0;
+            const productSelect = row.querySelector('.product-select');
+            const selectedOption = productSelect.options[productSelect.selectedIndex];
+            const taxRate = parseFloat(selectedOption.dataset.taxRate) || 0;
+            const rowTotal = quantity * price;
+            const rowTax = rowTotal * taxRate;
+            row.querySelector('.total').value = rowTotal.toFixed(2);
+            subtotal += rowTotal;
+            tax += rowTax;
+        });
+        document.getElementById('order-subtotal').textContent = `$${subtotal.toFixed(2)}`;
+        document.getElementById('order-tax').textContent = `$${tax.toFixed(2)}`;
+        document.getElementById('order-total').textContent = `$${(subtotal + tax).toFixed(2)}`;
+    };
+
+    addItemBtn.addEventListener('click', addItemRow);
+    itemsContainer.addEventListener('click', e => {
+        if (e.target.closest('.remove-item-btn')) {
+            e.target.closest('.item-row').remove();
+            updateTotals();
+        }
+    });
+    itemsContainer.addEventListener('change', e => {
+        if (e.target.classList.contains('product-select')) {
+            const selectedOption = e.target.options[e.target.selectedIndex];
+            const price = selectedOption.dataset.price || 0;
+            e.target.closest('.item-row').querySelector('.price').value = parseFloat(price).toFixed(2);
+        }
+        updateTotals();
+    });
+    itemsContainer.addEventListener('input', e => {
+        if (e.target.classList.contains('quantity')) {
+            updateTotals();
+        }
+    });
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const subtotal = parseFloat(document.getElementById('order-subtotal').textContent.replace('$', ''));
+        const tax = parseFloat(document.getElementById('order-tax').textContent.replace('$', ''));
+        const total = parseFloat(document.getElementById('order-total').textContent.replace('$', ''));
+        const items = [];
+        itemsContainer.querySelectorAll('.item-row').forEach(row => {
+            const productId = row.querySelector('.product-select').value;
+            const product = products.find(p => p.id == productId);
+            const quantity = parseFloat(row.querySelector('.quantity').value);
+            const price = parseFloat(row.querySelector('.price').value);
+            if (product) {
+                items.push({ id: productId, quantity, price, tax: (quantity * price) * product.tax_rate, total: quantity * price });
+            }
+        });
+        const formData = new FormData(form);
+        const data = {
+            customer_id: formData.get('customer_id'),
+            type: 'order',
+            due_date: formData.get('due_date'),
+            subtotal, tax, total, items
+        };
+        const response = await fetch(`${API_BASE_URL}documents.php`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            M.toast({ html: 'Orden de venta creada con éxito!' });
+            window.location.href = 'index.php?page=orders';
+        } else {
+            M.toast({ html: `Error: ${result.message}` });
+        }
+    });
+
+    await fetchData();
+    addItemRow();
+    M.Datepicker.init(document.querySelectorAll('.datepicker'), { format: 'yyyy-mm-dd', autoClose: true });
+}
 
 /**
  * Handles all logic for the Invoice View page
@@ -566,6 +893,7 @@ function handleInvoiceViewPage() {
                 // --- Populate Fiscal Info ---
                 document.getElementById('view-cfdi-use').textContent = `${doc.cfdi_use} - ${SAT_USO_CFDI[doc.cfdi_use] || ''}`;
                 document.getElementById('view-payment-method').textContent = `${doc.payment_method} - ${SAT_METODO_PAGO[doc.payment_method] || ''}`;
+                document.getElementById('view-payment-form').textContent = `${doc.payment_form} - ${SAT_FORMA_PAGO[doc.payment_form] || ''}`;
                 if(doc.uuid) document.getElementById('view-uuid').textContent = doc.uuid;
 
                 // --- Populate Items Table ---
@@ -611,6 +939,7 @@ function handleInvoiceViewPage() {
                 // Make them globally available for this page's scope
                 window.SAT_USO_CFDI = result.data.cfdi_uses;
                 window.SAT_METODO_PAGO = result.data.payment_methods;
+                window.SAT_FORMA_PAGO = result.data.payment_forms;
             }
         } catch (error) {
             console.error('Error fetching SAT catalogs:', error);

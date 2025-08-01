@@ -66,7 +66,8 @@ CREATE TABLE `documents` (
   `folio` varchar(20) NOT NULL,
   `status` enum('draft','sent','partial','paid','cancelled','completed') NOT NULL,
   `cfdi_use` varchar(5) DEFAULT NULL COMMENT 'Uso de CFDI (SAT)',
-  `payment_method` varchar(5) DEFAULT NULL COMMENT 'Método de pago (SAT)',
+  `payment_method` varchar(5) DEFAULT NULL COMMENT 'Método de pago (PUE/PPD)',
+  `payment_form` varchar(2) DEFAULT NULL COMMENT 'Forma de pago (SAT)',
   `subtotal` decimal(10,2) NOT NULL,
   `tax` decimal(10,2) NOT NULL,
   `total` decimal(10,2) NOT NULL,
@@ -118,6 +119,22 @@ CREATE TABLE `payments` (
   PRIMARY KEY (`id`),
   KEY `invoice_id` (`invoice_id`),
   CONSTRAINT `payments_ibfk_1` FOREIGN KEY (`invoice_id`) REFERENCES `documents` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `users`
+--
+
+CREATE TABLE `users` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `username` varchar(50) NOT NULL,
+  `password` varchar(255) NOT NULL,
+  `role` varchar(50) NOT NULL DEFAULT 'user',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `username` (`username`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 COMMIT;
