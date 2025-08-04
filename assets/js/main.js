@@ -14,6 +14,37 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 /**
+ * Generic helper to initialize a DataTable on a given table.
+ * @param {string} tableSelector - The CSS selector for the table (e.g., '#customers-table').
+ * @param {string} pageTitle - The title to use for PDF/Excel exports.
+ */
+function initializeDataTable(tableSelector, pageTitle) {
+    const table = $(tableSelector);
+
+    // Destroy any existing DataTable instance to prevent reinitialization errors
+    if ($.fn.DataTable.isDataTable(tableSelector)) {
+        table.DataTable().destroy();
+    }
+
+    table.DataTable({
+        layout: {
+            topStart: {
+                buttons: ['copy', 'csv', 'excel', 'pdf']
+            }
+        },
+        language: {
+            url: '//cdn.datatables.net/plug-ins/2.0.8/i18n/es-ES.json'
+        },
+        dom: 'Bfrtip',
+        buttons: [
+            { extend: 'excelHtml5', title: pageTitle },
+            { extend: 'pdfHtml5', title: pageTitle }
+        ]
+    });
+}
+
+
+/**
  * Handles all logic for the Customers page
  */
 function handleCustomersPage() {
@@ -42,6 +73,8 @@ function handleCustomersPage() {
                         </td>
                     </tr>
                 `).join('');
+                // Initialize DataTable
+                initializeDataTable('#customers-table', 'Lista de Clientes');
             }
         } catch (error) {
             console.error('Error loading customers:', error);
@@ -169,6 +202,7 @@ function handleProductsPage() {
                         </td>
                     </tr>
                 `).join('');
+                initializeDataTable('#products-table', 'Lista de Productos');
             }
         } catch (error) {
             console.error('Error loading products:', error);
@@ -288,10 +322,11 @@ function handleInvoicesPage() {
                         <td>$${parseFloat(invoice.total).toFixed(2)}</td>
                         <td><span class="new badge" data-badge-caption="${invoice.status}"></span></td>
                         <td>
-                            <a href="index.php?page=invoice_view&id=${invoice.id}" class="btn-small waves-effect waves-light"><i class="material-icons">visibility</i></a>
+                            <a href="index.php?page=document_view&id=${invoice.id}" class="btn-small waves-effect waves-light"><i class="material-icons">visibility</i></a>
                         </td>
                     </tr>
                 `).join('');
+                initializeDataTable('#invoices-table', 'Lista de Facturas');
                  // Re-initialize badges if necessary
                 M.AutoInit();
             }
@@ -319,6 +354,30 @@ async function handleInvoiceFormPage() {
     const itemTemplate = document.getElementById('invoice-item-template');
 
     let products = []; // To store product data
+
+    // --- Pre-population from reference document ---
+    const populateFormFromReference = () => {
+        const referenceDoc = JSON.parse(sessionStorage.getItem('referenceDocument'));
+        if (referenceDoc) {
+            // Set customer
+            customerSelect.value = referenceDoc.customer_id;
+
+            // Clear existing empty item rows before adding new ones
+            itemsContainer.innerHTML = '';
+
+            // Add items from reference doc
+            referenceDoc.items.forEach(item => {
+                addItemRow(item);
+            });
+
+            // Re-initialize selects after populating
+            M.FormSelect.init(document.querySelectorAll('select'));
+            updateTotals();
+
+            // Clean up sessionStorage
+            sessionStorage.removeItem('referenceDocument');
+        }
+    };
 
     // --- Fetch initial data (Customers, Products, SAT Catalogs) ---
     const fetchData = async () => {
@@ -367,17 +426,28 @@ async function handleInvoiceFormPage() {
     };
 
     // --- Add Item Row ---
-    const addItemRow = () => {
+    const addItemRow = (itemToPopulate = null) => {
         const templateContent = itemTemplate.content.cloneNode(true);
         const productSelect = templateContent.querySelector('.product-select');
+        const quantityInput = templateContent.querySelector('.quantity');
 
-        // Populate products in the new row's select
         products.forEach(p => {
-            productSelect.innerHTML += `<option value="${p.id}" data-price="${p.price}" data-tax-rate="${p.tax_rate}">${p.name}</option>`;
+            const isSelected = itemToPopulate && p.id == itemToPopulate.product_id;
+            productSelect.innerHTML += `<option value="${p.id}" data-price="${p.price}" data-tax-rate="${p.tax_rate}" ${isSelected ? 'selected' : ''}>${p.name}</option>`;
         });
+
+        if(itemToPopulate){
+            quantityInput.value = itemToPopulate.quantity;
+        }
 
         itemsContainer.appendChild(templateContent);
         M.FormSelect.init(itemsContainer.querySelectorAll('select:last-of-type'));
+
+        // Manually trigger price update for populated row
+        if(itemToPopulate){
+             const price = productSelect.options[productSelect.selectedIndex].dataset.price || 0;
+             itemsContainer.lastChild.querySelector('.price').value = parseFloat(price).toFixed(2);
+        }
     };
 
     // --- Update Totals ---
@@ -496,8 +566,14 @@ async function handleInvoiceFormPage() {
 
     // --- Initial setup ---
     await fetchData();
-    // Add one item row to start with
-    addItemRow();
+    // Check for a reference document and populate the form
+    populateFormFromReference();
+
+    // If no items were populated from reference, add a default empty row
+    if (itemsContainer.children.length === 0) {
+        addItemRow();
+    }
+
     // Initialize datepickers
     M.Datepicker.init(document.querySelectorAll('.datepicker'), {
         format: 'yyyy-mm-dd',
@@ -524,8 +600,8 @@ document.addEventListener('DOMContentLoaded', function() {
     if (document.getElementById('invoice-form-page')) {
         handleInvoiceFormPage();
     }
-    if (document.getElementById('invoice-view-page')) {
-        handleInvoiceViewPage();
+    if (document.getElementById('document-view-page')) {
+        handleDocumentViewPage();
     }
     if (document.getElementById('quotes-page')) {
         handleQuotesPage();
@@ -565,6 +641,7 @@ function handleQuotesPage() {
                         </td>
                     </tr>
                 `).join('');
+                initializeDataTable('#quotes-table', 'Lista de Cotizaciones');
                 M.AutoInit();
             }
         } catch (error) {
@@ -605,14 +682,27 @@ async function handleQuoteFormPage() {
         M.FormSelect.init(document.querySelectorAll('select'));
     };
 
-    const addItemRow = () => {
+    const addItemRow = (itemToPopulate = null) => {
         const templateContent = itemTemplate.content.cloneNode(true);
         const productSelect = templateContent.querySelector('.product-select');
+        const quantityInput = templateContent.querySelector('.quantity');
+
         products.forEach(p => {
-            productSelect.innerHTML += `<option value="${p.id}" data-price="${p.price}" data-tax-rate="${p.tax_rate}">${p.name}</option>`;
+            const isSelected = itemToPopulate && p.id == itemToPopulate.product_id;
+            productSelect.innerHTML += `<option value="${p.id}" data-price="${p.price}" data-tax-rate="${p.tax_rate}" ${isSelected ? 'selected' : ''}>${p.name}</option>`;
         });
+
+        if(itemToPopulate){
+            quantityInput.value = itemToPopulate.quantity;
+        }
+
         itemsContainer.appendChild(templateContent);
         M.FormSelect.init(itemsContainer.querySelectorAll('select:last-of-type'));
+
+        if(itemToPopulate){
+             const price = productSelect.options[productSelect.selectedIndex].dataset.price || 0;
+             itemsContainer.lastChild.querySelector('.price').value = parseFloat(price).toFixed(2);
+        }
     };
 
     const updateTotals = () => {
@@ -693,7 +783,10 @@ async function handleQuoteFormPage() {
     });
 
     await fetchData();
-    addItemRow();
+    populateFormFromReference();
+    if (itemsContainer.children.length === 0) {
+        addItemRow();
+    }
     M.Datepicker.init(document.querySelectorAll('.datepicker'), { format: 'yyyy-mm-dd', autoClose: true });
 }
 
@@ -721,6 +814,7 @@ function handleOrdersPage() {
                         </td>
                     </tr>
                 `).join('');
+                initializeDataTable('#orders-table', 'Lista de Órdenes de Venta');
                 M.AutoInit();
             }
         } catch (error) {
@@ -740,6 +834,19 @@ async function handleOrderFormPage() {
     const addItemBtn = document.getElementById('add-item-btn');
     const itemTemplate = document.getElementById('order-item-template');
     let products = [];
+
+    // --- Pre-population from reference document ---
+    const populateFormFromReference = () => {
+        const referenceDoc = JSON.parse(sessionStorage.getItem('referenceDocument'));
+        if (referenceDoc) {
+            customerSelect.value = referenceDoc.customer_id;
+            itemsContainer.innerHTML = '';
+            referenceDoc.items.forEach(item => addItemRow(item));
+            M.FormSelect.init(document.querySelectorAll('select'));
+            updateTotals();
+            sessionStorage.removeItem('referenceDocument');
+        }
+    };
 
     const fetchData = async () => {
         const [customersRes, productsRes] = await Promise.all([
@@ -852,20 +959,20 @@ async function handleOrderFormPage() {
 }
 
 /**
- * Handles all logic for the Invoice View page
+ * Handles all logic for the Document View page
  */
-function handleInvoiceViewPage() {
+function handleDocumentViewPage() {
     const urlParams = new URLSearchParams(window.location.search);
-    const invoiceId = urlParams.get('id');
+    const documentId = urlParams.get('id');
 
-    if (!invoiceId) {
+    if (!documentId) {
         window.location.href = 'index.php?page=invoices';
         return;
     }
 
-    const loadInvoiceData = async () => {
+    const loadDocumentData = async () => {
         try {
-            const response = await fetch(`${API_BASE_URL}documents.php?id=${invoiceId}`);
+            const response = await fetch(`${API_BASE_URL}documents.php?id=${documentId}`);
             const result = await response.json();
 
             if (result.status === 'success') {
@@ -913,11 +1020,40 @@ function handleInvoiceViewPage() {
                 document.getElementById('view-tax').textContent = `$${parseFloat(doc.tax).toFixed(2)}`;
                 document.getElementById('view-total').textContent = `$${parseFloat(doc.total).toFixed(2)}`;
 
-                // --- Handle button visibility based on status ---
-                if (doc.status === 'cancelled' || doc.status === 'paid') {
-                    document.getElementById('cancel-invoice-btn').classList.add('disabled');
-                    document.getElementById('record-payment-btn').classList.add('disabled');
+                // --- Handle button visibility based on document type and status ---
+                const generateOrderBtn = document.getElementById('generate-order-btn');
+                const generateInvoiceBtn = document.getElementById('generate-invoice-btn');
+                const recordPaymentBtn = document.getElementById('record-payment-btn');
+                const backToListBtn = document.getElementById('back-to-list-btn');
+
+                // Set back button link
+                backToListBtn.href = `index.php?page=${doc.type}s`;
+
+                if (doc.type === 'quote') {
+                    generateOrderBtn.style.display = 'inline-block';
                 }
+                if (doc.type === 'order') {
+                    generateInvoiceBtn.style.display = 'inline-block';
+                }
+                if (doc.type === 'invoice') {
+                    recordPaymentBtn.style.display = 'inline-block';
+                }
+
+                if (doc.status === 'cancelled' || doc.status === 'paid' || doc.status === 'completed') {
+                    document.getElementById('cancel-invoice-btn').classList.add('disabled');
+                    recordPaymentBtn.classList.add('disabled');
+                    generateOrderBtn.classList.add('disabled');
+                    generateInvoiceBtn.classList.add('disabled');
+                }
+
+                // --- Add event listeners for generate buttons ---
+                const handleGeneration = (targetUrl) => {
+                    sessionStorage.setItem('referenceDocument', JSON.stringify(doc));
+                    window.location.href = targetUrl;
+                };
+                generateOrderBtn.addEventListener('click', () => handleGeneration('index.php?page=order_form'));
+                generateInvoiceBtn.addEventListener('click', () => handleGeneration('index.php?page=invoice_form'));
+
 
             } else {
                 M.toast({ html: `Error: ${result.message}` });
@@ -956,22 +1092,22 @@ function handleInvoiceViewPage() {
         e.preventDefault();
         if (e.target.classList.contains('disabled')) return;
 
-        if (confirm('¿Estás seguro de que quieres cancelar esta factura? Esta acción no se puede deshacer.')) {
+        if (confirm('¿Estás seguro de que quieres cancelar este documento? Esta acción no se puede deshacer.')) {
             try {
-                const response = await fetch(`${API_BASE_URL}documents.php?id=${invoiceId}`, {
+                const response = await fetch(`${API_BASE_URL}documents.php?id=${documentId}`, {
                     method: 'DELETE'
                 });
                 const result = await response.json();
                 if (result.status === 'success') {
-                    M.toast({ html: 'Factura cancelada con éxito.' });
+                    M.toast({ html: 'Documento cancelado con éxito.' });
                     // Reload data to reflect changes
-                    loadInvoiceData();
+                    loadDocumentData();
                 } else {
                     M.toast({ html: `Error: ${result.message}` });
                 }
             } catch (error) {
-                console.error('Error cancelling invoice:', error);
-                M.toast({ html: 'Error al cancelar la factura.' });
+                console.error('Error cancelling document:', error);
+                M.toast({ html: 'Error al cancelar el documento.' });
             }
         }
     });
@@ -983,7 +1119,7 @@ function handleInvoiceViewPage() {
 
     const loadPayments = async () => {
         try {
-            const response = await fetch(`${API_BASE_URL}payments.php?invoice_id=${invoiceId}`);
+            const response = await fetch(`${API_BASE_URL}payments.php?invoice_id=${documentId}`);
             const result = await response.json();
             if (result.status === 'success' && result.data.length > 0) {
                 paymentsHistoryBody.innerHTML = result.data.map(p => `
@@ -1006,7 +1142,7 @@ function handleInvoiceViewPage() {
         e.preventDefault();
         const formData = new FormData(paymentForm);
         const data = Object.fromEntries(formData.entries());
-        data.invoice_id = invoiceId; // Add invoiceId to the data
+        data.invoice_id = documentId; // Add documentId to the data
 
         try {
             const response = await fetch(`${API_BASE_URL}payments.php`, {
@@ -1020,7 +1156,7 @@ function handleInvoiceViewPage() {
                 paymentModal.close();
                 paymentForm.reset();
                 // Reload both invoice data (for status) and payment history
-                loadInvoiceData();
+                loadDocumentData();
                 loadPayments();
             } else {
                 M.toast({ html: `Error: ${result.message}` });

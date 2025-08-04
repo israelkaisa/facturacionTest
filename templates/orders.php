@@ -8,7 +8,7 @@
     </a>
 
     <!-- Orders Table -->
-    <table class="striped responsive-table">
+    <table id="orders-table" class="striped responsive-table">
         <thead>
             <tr>
                 <th>Folio</th>

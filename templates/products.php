@@ -6,7 +6,7 @@
     <a class="btn-floating btn-large waves-effect waves-light red modal-trigger" href="#modal-product"><i class="material-icons">add</i></a>
 
     <!-- Products Table -->
-    <table class="striped responsive-table">
+    <table id="products-table" class="striped responsive-table">
         <thead>
             <tr>
                 <th>SKU (Clave SAT)</th>

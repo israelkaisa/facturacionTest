@@ -8,6 +8,9 @@
     <link rel="stylesheet" href="assets/css/materialize.min.css">
     <!-- Google Icons -->
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="assets/datatables/dataTables.dataTables.min.css">
+    <link rel="stylesheet" href="assets/datatables/buttons.dataTables.min.css">
     <!-- Custom CSS -->
     <link rel="stylesheet" href="assets/css/style.css">
 </head>

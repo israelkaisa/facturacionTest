@@ -8,7 +8,7 @@
     </a>
 
     <!-- Quotes Table -->
-    <table class="striped responsive-table">
+    <table id="quotes-table" class="striped responsive-table">
         <thead>
             <tr>
                 <th>Folio</th>

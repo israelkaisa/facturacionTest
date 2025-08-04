@@ -20,6 +20,15 @@
 <script src="assets/js/jquery-3.7.1.min.js"></script>
 <!-- Materialize JS -->
 <script src="assets/js/materialize.min.js"></script>
+
+<!-- DataTables JS -->
+<script src="assets/datatables/dataTables.min.js"></script>
+<script src="assets/datatables/dataTables.buttons.min.js"></script>
+<script src="assets/datatables/jszip.min.js"></script>
+<script src="assets/datatables/pdfmake.min.js"></script>
+<script src="assets/datatables/vfs_fonts.js"></script>
+<script src="assets/datatables/buttons.html5.min.js"></script>
+
 <!-- Custom JS -->
 <script src="assets/js/main.js"></script>
 

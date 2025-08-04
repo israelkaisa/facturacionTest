@@ -137,4 +137,41 @@ CREATE TABLE `users` (
   UNIQUE KEY `username` (`username`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `sat_cfdi_uses`
+--
+
+CREATE TABLE `sat_cfdi_uses` (
+  `key` varchar(5) NOT NULL,
+  `value` varchar(255) NOT NULL,
+  PRIMARY KEY (`key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `sat_payment_forms`
+--
+
+CREATE TABLE `sat_payment_forms` (
+  `key` varchar(5) NOT NULL,
+  `value` varchar(255) NOT NULL,
+  PRIMARY KEY (`key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `sat_payment_methods`
+--
+
+CREATE TABLE `sat_payment_methods` (
+  `key` varchar(5) NOT NULL,
+  `value` varchar(255) NOT NULL,
+  PRIMARY KEY (`key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+
 COMMIT;

@@ -1,4 +1,4 @@
-<div id="invoice-view-page">
+<div id="document-view-page">
     <div class="row">
         <div class="col s12">
             <div class="card">
@@ -58,9 +58,15 @@
 
                 </div>
                 <div class="card-action">
-                    <a href="index.php?page=invoices" class="btn grey">Volver a la lista</a>
-                    <a href="#" class="btn red" id="cancel-invoice-btn">Cancelar Factura</a>
-                    <a href="#modal-payment" class="btn green modal-trigger" id="record-payment-btn">Registrar Pago</a>
+                    <a href="index.php?page=invoices" class="btn grey" id="back-to-list-btn">Volver a la lista</a>
+
+                    <!-- Generate Buttons -->
+                    <a href="#" class="btn blue" id="generate-order-btn" style="display: none;">Generar Orden de Venta</a>
+                    <a href="#" class="btn blue" id="generate-invoice-btn" style="display: none;">Generar Factura</a>
+
+                    <!-- Action Buttons -->
+                    <a href="#" class="btn red" id="cancel-invoice-btn">Cancelar Documento</a>
+                    <a href="#modal-payment" class="btn green modal-trigger" id="record-payment-btn" style="display: none;">Registrar Pago</a>
                 </div>
             </div>
         </div>

@@ -6,7 +6,7 @@
     <a class="btn-floating btn-large waves-effect waves-light red modal-trigger" href="#modal-customer"><i class="material-icons">add</i></a>
 
     <!-- Customers Table -->
-    <table class="striped responsive-table">
+    <table id="customers-table" class="striped responsive-table">
         <thead>
             <tr>
                 <th>Nombre (Razón Social)</th>

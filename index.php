@@ -36,7 +36,13 @@ if ($page === 'login') {
     // All other pages use the standard header/footer
     require_once 'templates/header.php';
 
-    $file = 'templates/' . $page . '.php';
+    // Special case for the unified document view
+    if ($page === 'document_view' && isset($_GET['id'])) {
+        $file = 'templates/document_view.php';
+    } else {
+        $file = 'templates/' . $page . '.php';
+    }
+
     if (file_exists($file)) {
         require_once $file;
     } else {
