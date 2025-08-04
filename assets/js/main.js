@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', function() {
  * @param {string} pageTitle - The title to use for PDF/Excel exports.
  */
 function initializeDataTable(tableSelector, pageTitle) {
+    console.log(`Initializing DataTable for: ${tableSelector}`);
     const table = $(tableSelector);
 
     // Destroy any existing DataTable instance to prevent reinitialization errors
@@ -26,20 +27,27 @@ function initializeDataTable(tableSelector, pageTitle) {
         table.DataTable().destroy();
     }
 
+    // A more standard and robust initialization
     table.DataTable({
-        layout: {
-            topStart: {
-                buttons: ['copy', 'csv', 'excel', 'pdf']
+        dom: '<"top"lfB>rt<"bottom"ip><"clear">', // l-length, f-filtering, B-buttons, r-processing, t-table, i-info, p-pagination
+        buttons: [
+            {
+                extend: 'excelHtml5',
+                text: 'Exportar a Excel',
+                title: pageTitle,
+                className: 'btn-small waves-effect waves-light green'
+            },
+            {
+                extend: 'pdfHtml5',
+                text: 'Exportar a PDF',
+                title: pageTitle,
+                className: 'btn-small waves-effect waves-light red'
             }
-        },
+        ],
         language: {
             url: '//cdn.datatables.net/plug-ins/2.0.8/i18n/es-ES.json'
         },
-        dom: 'Bfrtip',
-        buttons: [
-            { extend: 'excelHtml5', title: pageTitle },
-            { extend: 'pdfHtml5', title: pageTitle }
-        ]
+        responsive: true
     });
 }
 

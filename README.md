@@ -44,17 +44,17 @@ Sigue estos pasos para poner en marcha el proyecto en tu entorno local.
     define('DB_NAME', 'facturacion_db'); // El nombre que le diste a tu BD
     ```
 
-### 2. Crear el Usuario Administrador
+### 2. Poblar la Base de Datos (Catálogos y Admin)
 
-Para poder iniciar sesión, necesitas crear un usuario por defecto. Hemos incluido un script para facilitar este proceso.
+Para que el sistema funcione correctamente, necesitas poblar las tablas de catálogos del SAT y crear un usuario administrador por defecto.
 
-Ejecuta el siguiente comando desde la raíz del proyecto:
+Ejecuta el siguiente comando desde la raíz del proyecto. Este script hará ambas cosas:
 
 ```sh
-php create_admin.php
+php seed.php
 ```
 
-Esto creará un usuario con las siguientes credenciales:
+Esto poblará los catálogos y creará un usuario con las siguientes credenciales:
 -   **Usuario:** `admin`
 -   **Contraseña:** `admin`
 
