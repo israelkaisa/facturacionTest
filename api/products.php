@@ -39,12 +39,17 @@ try {
 
         case 'POST':
             $data = json_decode(file_get_contents('php://input'), true);
-            if ($product_model->create($data)) {
-                http_response_code(201);
-                $response = ['status' => 'success', 'message' => 'Product created successfully.'];
+            if ($product_model->findBySku($data['sku'])) {
+                http_response_code(409); // Conflict
+                $response = ['status' => 'error', 'message' => 'El SKU ya existe. Por favor, use uno diferente.'];
             } else {
-                http_response_code(400);
-                $response = ['status' => 'error', 'message' => 'Failed to create product.'];
+                if ($product_model->create($data)) {
+                    http_response_code(201);
+                    $response = ['status' => 'success', 'message' => 'Producto creado con éxito.'];
+                } else {
+                    http_response_code(400);
+                    $response = ['status' => 'error', 'message' => 'Error al crear el producto.'];
+                }
             }
             break;
 
@@ -52,11 +57,18 @@ try {
             if (isset($_GET['id'])) {
                 $id = intval($_GET['id']);
                 $data = json_decode(file_get_contents('php://input'), true);
-                if ($product_model->update($id, $data)) {
-                    $response = ['status' => 'success', 'message' => 'Product updated successfully.'];
+                $existing_product = $product_model->findBySku($data['sku']);
+
+                if ($existing_product && $existing_product['id'] != $id) {
+                    http_response_code(409); // Conflict
+                    $response = ['status' => 'error', 'message' => 'El SKU ya pertenece a otro producto.'];
                 } else {
-                    http_response_code(400);
-                    $response = ['status' => 'error', 'message' => 'Failed to update product.'];
+                    if ($product_model->update($id, $data)) {
+                        $response = ['status' => 'success', 'message' => 'Producto actualizado con éxito.'];
+                    } else {
+                        http_response_code(400);
+                        $response = ['status' => 'error', 'message' => 'Error al actualizar el producto.'];
+                    }
                 }
             } else {
                 http_response_code(400);

@@ -61,7 +61,7 @@ class Document {
      */
     public function create($data) {
         try {
-            $this->db->dbh->beginTransaction();
+            $this->db->getDbh()->beginTransaction();
 
             // 1. Insert into documents table
             $this->db->query("
@@ -103,11 +103,11 @@ class Document {
                 $this->db->execute();
             }
 
-            $this->db->dbh->commit();
+            $this->db->getDbh()->commit();
             return $documentId;
 
         } catch (Exception $e) {
-            $this->db->dbh->rollBack();
+            $this->db->getDbh()->rollBack();
             // In a real app, log the error
             error_log('Document creation failed: ' . $e->getMessage());
             return false;

@@ -27,6 +27,15 @@ class Customer {
     }
 
     /**
+     * Get customer by RFC
+     */
+    public function findByRfc($rfc) {
+        $this->db->query("SELECT * FROM customers WHERE rfc = :rfc");
+        $this->db->bind(':rfc', $rfc);
+        return $this->db->single();
+    }
+
+    /**
      * Create a new customer
      * @param array $data Associative array with customer data (name, rfc, address, email, phone)
      */

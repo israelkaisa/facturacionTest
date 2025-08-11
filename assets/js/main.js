@@ -280,19 +280,22 @@ function handleProductsPage() {
             const response = await fetch(apiUrl);
             const result = await response.json();
             if (result.status === 'success') {
-                tableBody.innerHTML = result.data.map(product => `
-                    <tr>
-                        <td>${product.sku}</td>
-                        <td>${product.sat_product_key}</td>
-                        <td>${product.name}</td>
-                        <td>${product.sat_unit_key} - ${satCatalogs.units[product.sat_unit_key] || 'N/A'}</td>
-                        <td>$${parseFloat(product.price).toFixed(2)}</td>
-                        <td>
-                            <a href="#" class="btn-small waves-effect waves-light blue edit-btn" data-id="${product.id}"><i class="material-icons">edit</i></a>
-                            <a href="#" class="btn-small waves-effect waves-light red delete-btn" data-id="${product.id}"><i class="material-icons">delete</i></a>
-                        </td>
-                    </tr>
-                `).join('');
+                tableBody.innerHTML = result.data.map(product => {
+                    const unitName = (satCatalogs && satCatalogs.units) ? (satCatalogs.units[product.sat_unit_key] || 'N/A') : 'N/A';
+                    return `
+                        <tr>
+                            <td>${product.sku}</td>
+                            <td>${product.sat_product_key}</td>
+                            <td>${product.name}</td>
+                            <td>${product.sat_unit_key} - ${unitName}</td>
+                            <td>$${parseFloat(product.price).toFixed(2)}</td>
+                            <td>
+                                <a href="#" class="btn-small waves-effect waves-light blue edit-btn" data-id="${product.id}"><i class="material-icons">edit</i></a>
+                                <a href="#" class="btn-small waves-effect waves-light red delete-btn" data-id="${product.id}"><i class="material-icons">delete</i></a>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
                 initializeDataTable('#products-table', 'Lista de Productos');
             }
         } catch (error) {

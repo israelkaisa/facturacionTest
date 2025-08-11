@@ -39,12 +39,17 @@ try {
 
         case 'POST':
             $data = json_decode(file_get_contents('php://input'), true);
-            if ($customer_model->create($data)) {
-                http_response_code(201);
-                $response = ['status' => 'success', 'message' => 'Customer created successfully.'];
+            if ($customer_model->findByRfc($data['rfc'])) {
+                http_response_code(409); // Conflict
+                $response = ['status' => 'error', 'message' => 'El RFC ya existe. Por favor, use uno diferente.'];
             } else {
-                http_response_code(400);
-                $response = ['status' => 'error', 'message' => 'Failed to create customer.'];
+                if ($customer_model->create($data)) {
+                    http_response_code(201);
+                    $response = ['status' => 'success', 'message' => 'Cliente creado con éxito.'];
+                } else {
+                    http_response_code(400);
+                    $response = ['status' => 'error', 'message' => 'Error al crear el cliente.'];
+                }
             }
             break;
 
@@ -52,11 +57,18 @@ try {
             if (isset($_GET['id'])) {
                 $id = intval($_GET['id']);
                 $data = json_decode(file_get_contents('php://input'), true);
-                if ($customer_model->update($id, $data)) {
-                    $response = ['status' => 'success', 'message' => 'Customer updated successfully.'];
+                $existing_customer = $customer_model->findByRfc($data['rfc']);
+
+                if ($existing_customer && $existing_customer['id'] != $id) {
+                    http_response_code(409); // Conflict
+                    $response = ['status' => 'error', 'message' => 'El RFC ya pertenece a otro cliente.'];
                 } else {
-                    http_response_code(400);
-                    $response = ['status' => 'error', 'message' => 'Failed to update customer.'];
+                    if ($customer_model->update($id, $data)) {
+                        $response = ['status' => 'success', 'message' => 'Cliente actualizado con éxito.'];
+                    } else {
+                        http_response_code(400);
+                        $response = ['status' => 'error', 'message' => 'Error al actualizar el cliente.'];
+                    }
                 }
             } else {
                 http_response_code(400);
