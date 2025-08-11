@@ -162,8 +162,12 @@ function handleCustomersPage() {
 
     // --- Form Submission (Create/Update) ---
     const submitButton = document.querySelector('#modal-customer button[type="submit"]');
+    let isSubmitting = false;
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
+        if (isSubmitting) return;
+
+        isSubmitting = true;
         submitButton.disabled = true;
 
         const formData = new FormData(form);
@@ -191,6 +195,7 @@ function handleCustomersPage() {
             console.error('Error saving customer:', error);
             M.toast({ html: 'Error al guardar cliente' });
         } finally {
+            isSubmitting = false;
             submitButton.disabled = false;
         }
     });
@@ -335,8 +340,12 @@ function handleProductsPage() {
 
     // --- Form Submission (Create/Update) ---
     const submitButton = document.querySelector('#modal-product button[type="submit"]');
+    let isSubmitting = false;
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
+        if (isSubmitting) return;
+
+        isSubmitting = true;
         submitButton.disabled = true;
 
         const formData = new FormData(form);
@@ -364,6 +373,7 @@ function handleProductsPage() {
             console.error('Error saving product:', error);
             M.toast({ html: 'Error al guardar producto' });
         } finally {
+            isSubmitting = false;
             submitButton.disabled = false;
         }
     });
