@@ -1100,10 +1100,19 @@ function handleDocumentViewPage() {
         e.preventDefault();
         if (e.target.classList.contains('disabled')) return;
 
-        if (confirm('¿Estás seguro de que quieres cancelar este documento? Esta acción no se puede deshacer.')) {
+        const reason = prompt('Por favor, ingresa el motivo de la cancelación:');
+
+        if (reason) { // Proceed only if the user entered a reason
             try {
-                const response = await fetch(`${API_BASE_URL}documents.php?id=${documentId}`, {
-                    method: 'DELETE'
+                const response = await fetch(`${API_BASE_URL}documents.php?action=cancel`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        id: documentId,
+                        reason: reason
+                    })
                 });
                 const result = await response.json();
                 if (result.status === 'success') {
