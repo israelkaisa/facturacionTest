@@ -47,7 +47,7 @@ try {
     foreach ($catalogs as $tableName => $data) {
         echo "Sembrando '$tableName'...\n";
         // Use "INSERT IGNORE" to avoid errors if the key already exists.
-        $stmt = $db->dbh->prepare("INSERT IGNORE INTO $tableName (`key`, `value`) VALUES (:key, :value)");
+        $stmt = $db->getDbh()->prepare("INSERT IGNORE INTO $tableName (`key`, `value`) VALUES (:key, :value)");
         foreach ($data as $key => $value) {
             $stmt->execute(['key' => $key, 'value' => $value]);
         }
@@ -55,7 +55,7 @@ try {
     }
 
     // Seed the new SAT units table
-    seed_sat_units($db->dbh);
+    seed_sat_units($db->getDbh());
 
     echo "\n¡Siembra de catálogos completada con éxito!\n";
 

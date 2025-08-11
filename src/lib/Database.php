@@ -82,5 +82,10 @@ class Database {
     public function lastInsertId() {
         return $this->dbh->lastInsertId();
     }
+
+    // Get the PDO instance
+    public function getDbh() {
+        return $this->dbh;
+    }
 }
 ?>
