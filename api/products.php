@@ -39,6 +39,18 @@ try {
 
         case 'POST':
             $data = json_decode(file_get_contents('php://input'), true);
+
+            // --- Input Validation ---
+            $required_fields = ['sku', 'sat_product_key', 'name', 'sat_unit_key', 'price', 'tax_rate'];
+            foreach ($required_fields as $field) {
+                if (empty($data[$field])) {
+                    http_response_code(400); // Bad Request
+                    $response = ['status' => 'error', 'message' => "El campo '$field' es obligatorio."];
+                    echo json_encode($response);
+                    exit();
+                }
+            }
+
             if ($product_model->findBySku($data['sku'])) {
                 http_response_code(409); // Conflict
                 $response = ['status' => 'error', 'message' => 'El SKU ya existe. Por favor, use uno diferente.'];
@@ -47,8 +59,8 @@ try {
                     http_response_code(201);
                     $response = ['status' => 'success', 'message' => 'Producto creado con éxito.'];
                 } else {
-                    http_response_code(400);
-                    $response = ['status' => 'error', 'message' => 'Error al crear el producto.'];
+                    http_response_code(500); // Internal Server Error
+                    $response = ['status' => 'error', 'message' => 'Error en el servidor al crear el producto.'];
                 }
             }
             break;
@@ -57,6 +69,18 @@ try {
             if (isset($_GET['id'])) {
                 $id = intval($_GET['id']);
                 $data = json_decode(file_get_contents('php://input'), true);
+
+                // --- Input Validation ---
+                $required_fields = ['sku', 'sat_product_key', 'name', 'sat_unit_key', 'price', 'tax_rate'];
+                foreach ($required_fields as $field) {
+                    if (empty($data[$field])) {
+                        http_response_code(400); // Bad Request
+                        $response = ['status' => 'error', 'message' => "El campo '$field' es obligatorio."];
+                        echo json_encode($response);
+                        exit();
+                    }
+                }
+
                 $existing_product = $product_model->findBySku($data['sku']);
 
                 if ($existing_product && $existing_product['id'] != $id) {
@@ -66,8 +90,8 @@ try {
                     if ($product_model->update($id, $data)) {
                         $response = ['status' => 'success', 'message' => 'Producto actualizado con éxito.'];
                     } else {
-                        http_response_code(400);
-                        $response = ['status' => 'error', 'message' => 'Error al actualizar el producto.'];
+                        http_response_code(500); // Internal Server Error
+                        $response = ['status' => 'error', 'message' => 'Error en el servidor al actualizar el producto.'];
                     }
                 }
             } else {

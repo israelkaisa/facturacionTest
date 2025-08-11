@@ -85,17 +85,14 @@ function handleSatCatalogPage() {
  * @param {string} pageTitle - The title to use for PDF/Excel exports.
  */
 function initializeDataTable(tableSelector, pageTitle) {
-    console.log(`Initializing DataTable for: ${tableSelector}`);
-    const table = $(tableSelector);
-
-    // Destroy any existing DataTable instance to prevent reinitialization errors
+    // If the table has already been initialized, return the instance
     if ($.fn.DataTable.isDataTable(tableSelector)) {
-        table.DataTable().destroy();
+        return $(tableSelector).DataTable();
     }
 
-    // A more standard and robust initialization
-    table.DataTable({
-        dom: '<"top"lfB>rt<"bottom"ip><"clear">', // l-length, f-filtering, B-buttons, r-processing, t-table, i-info, p-pagination
+    // Otherwise, initialize it and return the new instance
+    return $(tableSelector).DataTable({
+        dom: '<"top"lfB>rt<"bottom"ip><"clear">',
         buttons: [
             {
                 extend: 'excelHtml5',
@@ -123,11 +120,14 @@ function initializeDataTable(tableSelector, pageTitle) {
  */
 function handleCustomersPage() {
     const apiUrl = `${API_BASE_URL}customers.php`;
-    const tableBody = document.getElementById('customers-table-body');
     const form = document.getElementById('form-customer');
     const modal = M.Modal.getInstance(document.getElementById('modal-customer'));
     const modalTitle = document.getElementById('modal-customer-title');
     const customerIdField = document.getElementById('customer-id');
+    const tableBody = document.getElementById('customers-table-body'); // Still needed for click delegation
+
+    // Initialize the DataTable once and get its instance
+    const customersTable = initializeDataTable('#customers-table', 'Lista de Clientes');
 
     // --- Load Customers ---
     const loadCustomers = async () => {
@@ -135,24 +135,28 @@ function handleCustomersPage() {
             const response = await fetch(apiUrl);
             const result = await response.json();
             if (result.status === 'success') {
-                tableBody.innerHTML = result.data.map(customer => `
-                    <tr>
-                        <td>${customer.name}</td>
-                        <td>${customer.rfc}</td>
-                        <td>${customer.email}</td>
-                        <td>${customer.phone}</td>
-                        <td>
-                            <a href="#" class="btn-small waves-effect waves-light blue edit-btn" data-id="${customer.id}"><i class="material-icons">edit</i></a>
-                            <a href="#" class="btn-small waves-effect waves-light red delete-btn" data-id="${customer.id}"><i class="material-icons">delete</i></a>
-                        </td>
-                    </tr>
-                `).join('');
-                // Initialize DataTable
-                initializeDataTable('#customers-table', 'Lista de Clientes');
+                const tableData = result.data.map(customer => {
+                    // Important: The actions column needs the data-id attribute for the event listener.
+                    const actions = `
+                        <a href="#" class="btn-small waves-effect waves-light blue edit-btn" data-id="${customer.id}"><i class="material-icons">edit</i></a>
+                        <a href="#" class="btn-small waves-effect waves-light red delete-btn" data-id="${customer.id}"><i class="material-icons">delete</i></a>
+                    `;
+                    return [
+                        customer.name,
+                        customer.rfc,
+                        customer.email,
+                        customer.phone,
+                        actions
+                    ];
+                });
+
+                customersTable.clear().rows.add(tableData).draw();
+            } else {
+                M.toast({ html: `Error al cargar clientes: ${result.message}` });
             }
         } catch (error) {
             console.error('Error loading customers:', error);
-            M.toast({ html: 'Error al cargar clientes' });
+            M.toast({ html: 'Error de red al cargar clientes' });
         }
     };
 
@@ -253,14 +257,15 @@ function handleCustomersPage() {
 function handleProductsPage() {
     const apiUrl = `${API_BASE_URL}products.php`;
     const satApiUrl = `${API_BASE_URL}sat_catalogs.php`;
-    const tableBody = document.getElementById('products-table-body');
     const form = document.getElementById('form-product');
     const modal = M.Modal.getInstance(document.getElementById('modal-product'));
     const modalTitle = document.getElementById('modal-product-title');
     const productIdField = document.getElementById('product-id');
     const unitSelect = document.getElementById('product-sat-unit-key');
+    const tableBody = document.getElementById('products-table-body');
 
     let satCatalogs = {};
+    const productsTable = initializeDataTable('#products-table', 'Lista de Productos');
 
     // --- Populate SAT Unit Select ---
     const populateSatUnitSelect = () => {
@@ -270,7 +275,6 @@ function handleProductsPage() {
                 unitSelect.innerHTML += `<option value="${key}">${key} - ${value}</option>`;
             }
         }
-        // Re-initialize the select with Materialize
         M.FormSelect.init(unitSelect);
     };
 
@@ -280,27 +284,28 @@ function handleProductsPage() {
             const response = await fetch(apiUrl);
             const result = await response.json();
             if (result.status === 'success') {
-                tableBody.innerHTML = result.data.map(product => {
+                const tableData = result.data.map(product => {
                     const unitName = (satCatalogs && satCatalogs.units) ? (satCatalogs.units[product.sat_unit_key] || 'N/A') : 'N/A';
-                    return `
-                        <tr>
-                            <td>${product.sku}</td>
-                            <td>${product.sat_product_key}</td>
-                            <td>${product.name}</td>
-                            <td>${product.sat_unit_key} - ${unitName}</td>
-                            <td>$${parseFloat(product.price).toFixed(2)}</td>
-                            <td>
-                                <a href="#" class="btn-small waves-effect waves-light blue edit-btn" data-id="${product.id}"><i class="material-icons">edit</i></a>
-                                <a href="#" class="btn-small waves-effect waves-light red delete-btn" data-id="${product.id}"><i class="material-icons">delete</i></a>
-                            </td>
-                        </tr>
+                    const actions = `
+                        <a href="#" class="btn-small waves-effect waves-light blue edit-btn" data-id="${product.id}"><i class="material-icons">edit</i></a>
+                        <a href="#" class="btn-small waves-effect waves-light red delete-btn" data-id="${product.id}"><i class="material-icons">delete</i></a>
                     `;
-                }).join('');
-                initializeDataTable('#products-table', 'Lista de Productos');
+                    return [
+                        product.sku,
+                        product.sat_product_key,
+                        product.name,
+                        `${product.sat_unit_key} - ${unitName}`,
+                        `$${parseFloat(product.price).toFixed(2)}`,
+                        actions
+                    ];
+                });
+                productsTable.clear().rows.add(tableData).draw();
+            } else {
+                M.toast({ html: `Error al cargar productos: ${result.message}` });
             }
         } catch (error) {
             console.error('Error loading products:', error);
-            M.toast({ html: 'Error al cargar productos' });
+            M.toast({ html: 'Error de red al cargar productos' });
         }
     };
 
