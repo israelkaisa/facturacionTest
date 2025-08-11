@@ -36,9 +36,11 @@ if ($page === 'login') {
     // All other pages use the standard header/footer
     require_once 'templates/header.php';
 
-    // Special case for the unified document view
+    // Special cases for specific views
     if ($page === 'document_view' && isset($_GET['id'])) {
         $file = 'templates/document_view.php';
+    } elseif ($page === 'sat_catalog_view' && isset($_GET['name'])) {
+        $file = 'templates/sat_catalog_view.php';
     } else {
         $file = 'templates/' . $page . '.php';
     }

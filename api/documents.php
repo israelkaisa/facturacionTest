@@ -40,34 +40,41 @@ try {
 
         case 'POST':
             $data = json_decode(file_get_contents('php://input'), true);
+            $action = $_GET['action'] ?? 'create';
 
-            // Basic validation
-            if (empty($data['customer_id']) || empty($data['type']) || empty($data['items'])) {
-                 http_response_code(400);
-                 $response = ['status' => 'error', 'message' => 'Missing required fields.'];
-                 break;
-            }
+            if ($action === 'create') {
+                // Basic validation for creating a document
+                if (empty($data['customer_id']) || empty($data['type']) || empty($data['items'])) {
+                    http_response_code(400);
+                    $response = ['status' => 'error', 'message' => 'Missing required fields for document creation.'];
+                    break;
+                }
 
-            $documentId = $document_model->create($data);
+                $documentId = $document_model->create($data);
 
-            if ($documentId) {
-                http_response_code(201);
-                $response = [
-                    'status' => 'success',
-                    'message' => 'Document created successfully.',
-                    'data' => ['id' => $documentId]
-                ];
-            } else {
-                http_response_code(500);
-                $response = ['status' => 'error', 'message' => 'Failed to create document due to a server error.'];
-            }
-            break;
+                if ($documentId) {
+                    http_response_code(201);
+                    $response = [
+                        'status' => 'success',
+                        'message' => 'Document created successfully.',
+                        'data' => ['id' => $documentId]
+                    ];
+                } else {
+                    http_response_code(500);
+                    $response = ['status' => 'error', 'message' => 'Failed to create document due to a server error.'];
+                }
+            } elseif ($action === 'cancel') {
+                // Validation for cancelling a document
+                if (empty($data['id']) || empty($data['reason'])) {
+                    http_response_code(400);
+                    $response = ['status' => 'error', 'message' => 'Document ID and reason are required for cancellation.'];
+                    break;
+                }
 
-        case 'DELETE':
-             if (isset($_GET['id'])) {
-                $id = intval($_GET['id']);
-                // For now, we assume a simple cancellation without a reason from the user.
-                if ($document_model->cancel($id)) {
+                $id = intval($data['id']);
+                $reason = trim($data['reason']);
+
+                if ($document_model->cancel($id, $reason)) {
                     $response = ['status' => 'success', 'message' => 'Document cancelled successfully.'];
                 } else {
                     http_response_code(500);
@@ -75,8 +82,14 @@ try {
                 }
             } else {
                 http_response_code(400);
-                $response = ['status' => 'error', 'message' => 'Document ID not provided.'];
+                $response = ['status' => 'error', 'message' => 'Invalid action specified.'];
             }
+            break;
+
+        case 'DELETE':
+            // Deprecated: Cancellation should be done via POST with action=cancel
+            http_response_code(405); // Method Not Allowed
+            $response = ['status' => 'error', 'message' => 'DELETE method is not supported for cancellation. Please use POST with action=cancel.'];
             break;
 
         default:
