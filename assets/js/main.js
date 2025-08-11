@@ -682,7 +682,7 @@ async function handleInvoiceFormPage() {
             cfdi_use: formData.get('cfdi_use'),
             payment_method: formData.get('payment_method'),
             payment_form: formData.get('payment_form'),
-            due_date: formData.get('due_date'),
+            due_date: new Date(formData.get('due_date')).toISOString().slice(0, 10), // Format to YYYY-MM-DD
             subtotal: subtotal,
             tax: tax,
             total: total,
@@ -910,7 +910,8 @@ async function handleQuoteFormPage() {
         const data = {
             customer_id: formData.get('customer_id'),
             type: 'quote',
-            due_date: formData.get('due_date'),
+            status: 'pending', // Add status for new quotes
+            due_date: new Date(formData.get('due_date')).toISOString().slice(0, 10), // Format to YYYY-MM-DD
             subtotal, tax, total, items
         };
         const response = await fetch(`${API_BASE_URL}documents.php`, {
@@ -933,6 +934,7 @@ async function handleQuoteFormPage() {
         addItemRow();
     }
     M.Datepicker.init(document.querySelectorAll('.datepicker'), { format: 'yyyy-mm-dd', autoClose: true });
+    
 }
 
 /**
@@ -1081,7 +1083,7 @@ async function handleOrderFormPage() {
         const data = {
             customer_id: formData.get('customer_id'),
             type: 'order',
-            due_date: formData.get('due_date'),
+            due_date: new Date(formData.get('due_date')).toISOString().slice(0, 10), // Format to YYYY-MM-DD
             subtotal, tax, total, items
         };
         const response = await fetch(`${API_BASE_URL}documents.php`, {
