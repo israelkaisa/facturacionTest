@@ -161,7 +161,7 @@ function handleCustomersPage() {
     };
 
     // --- Form Submission (Create/Update) ---
-    const submitButton = form.querySelector('button[type="submit"]');
+    const submitButton = document.querySelector('#modal-customer button[type="submit"]');
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         submitButton.disabled = true;
@@ -334,7 +334,7 @@ function handleProductsPage() {
     };
 
     // --- Form Submission (Create/Update) ---
-    const submitButton = form.querySelector('button[type="submit"]');
+    const submitButton = document.querySelector('#modal-product button[type="submit"]');
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         submitButton.disabled = true;
