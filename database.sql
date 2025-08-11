@@ -38,19 +38,34 @@ CREATE TABLE `customers` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `sat_units`
+--
+
+CREATE TABLE `sat_units` (
+  `key` varchar(5) NOT NULL,
+  `value` varchar(255) NOT NULL,
+  PRIMARY KEY (`key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `products`
 --
 
 CREATE TABLE `products` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `sku` varchar(50) NOT NULL COMMENT 'Clave de producto/servicio (SAT)',
+  `sku` varchar(50) NOT NULL COMMENT 'Internal Stock Keeping Unit',
+  `sat_product_key` varchar(10) NOT NULL COMMENT 'Clave de producto/servicio (SAT)',
   `name` varchar(255) NOT NULL COMMENT 'Descripción',
-  `unit_key` varchar(10) NOT NULL COMMENT 'Clave de unidad (SAT)',
+  `sat_unit_key` varchar(5) NOT NULL COMMENT 'Clave de unidad (SAT)',
   `price` decimal(10,2) NOT NULL,
   `tax_rate` decimal(4,2) NOT NULL DEFAULT 0.16 COMMENT 'Tasa de impuesto (ej. 0.16 para 16%)',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
-  UNIQUE KEY `sku` (`sku`)
+  UNIQUE KEY `sku` (`sku`),
+  KEY `sat_unit_key_idx` (`sat_unit_key`),
+  CONSTRAINT `fk_products_sat_units` FOREIGN KEY (`sat_unit_key`) REFERENCES `sat_units` (`key`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------

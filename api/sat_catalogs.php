@@ -10,7 +10,8 @@ try {
     $catalogs = [
         'cfdi_uses' => $catalog_model->getAll('sat_cfdi_uses'),
         'payment_methods' => $catalog_model->getAll('sat_payment_methods'),
-        'payment_forms' => $catalog_model->getAll('sat_payment_forms')
+        'payment_forms' => $catalog_model->getAll('sat_payment_forms'),
+        'units' => $catalog_model->getAll('sat_units')
     ];
 
     echo json_encode(['status' => 'success', 'data' => $catalogs]);

@@ -28,15 +28,16 @@ class Product {
 
     /**
      * Create a new product
-     * @param array $data Associative array with product data (sku, name, unit_key, price, tax_rate)
+     * @param array $data Associative array with product data
      */
     public function create($data) {
-        $this->db->query("INSERT INTO products (sku, name, unit_key, price, tax_rate) VALUES (:sku, :name, :unit_key, :price, :tax_rate)");
+        $this->db->query("INSERT INTO products (sku, sat_product_key, name, sat_unit_key, price, tax_rate) VALUES (:sku, :sat_product_key, :name, :sat_unit_key, :price, :tax_rate)");
 
         // Bind values
         $this->db->bind(':sku', $data['sku']);
+        $this->db->bind(':sat_product_key', $data['sat_product_key']);
         $this->db->bind(':name', $data['name']);
-        $this->db->bind(':unit_key', $data['unit_key']);
+        $this->db->bind(':sat_unit_key', $data['sat_unit_key']);
         $this->db->bind(':price', $data['price']);
         $this->db->bind(':tax_rate', $data['tax_rate']);
 
@@ -54,13 +55,14 @@ class Product {
      * @param array $data Associative array with product data
      */
     public function update($id, $data) {
-        $this->db->query("UPDATE products SET sku = :sku, name = :name, unit_key = :unit_key, price = :price, tax_rate = :tax_rate WHERE id = :id");
+        $this->db->query("UPDATE products SET sku = :sku, sat_product_key = :sat_product_key, name = :name, sat_unit_key = :sat_unit_key, price = :price, tax_rate = :tax_rate WHERE id = :id");
 
         // Bind values
         $this->db->bind(':id', $id);
         $this->db->bind(':sku', $data['sku']);
+        $this->db->bind(':sat_product_key', $data['sat_product_key']);
         $this->db->bind(':name', $data['name']);
-        $this->db->bind(':unit_key', $data['unit_key']);
+        $this->db->bind(':sat_unit_key', $data['sat_unit_key']);
         $this->db->bind(':price', $data['price']);
         $this->db->bind(':tax_rate', $data['tax_rate']);
 

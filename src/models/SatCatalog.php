@@ -19,7 +19,8 @@ class SatCatalog {
         $allowedTables = [
             'sat_cfdi_uses',
             'sat_payment_methods',
-            'sat_payment_forms'
+            'sat_payment_forms',
+            'sat_units'
         ];
 
         if (!in_array($tableName, $allowedTables)) {

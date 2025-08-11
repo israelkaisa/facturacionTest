@@ -1,6 +1,9 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize all Materialize components
     M.AutoInit();
+    // Initialize dropdowns specifically
+    var dropdowns = document.querySelectorAll('.dropdown-trigger');
+    M.Dropdown.init(dropdowns);
 
     const API_BASE_URL = 'api/';
 
@@ -11,7 +14,70 @@ document.addEventListener('DOMContentLoaded', function() {
     if (document.getElementById('products-page')) {
         handleProductsPage();
     }
+    if (document.getElementById('sat-catalog-page')) {
+        handleSatCatalogPage();
+    }
 });
+
+/**
+ * Handles all logic for the SAT Catalog View page
+ */
+function handleSatCatalogPage() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const catalogName = urlParams.get('name'); // e.g., 'sat_cfdi_uses'
+
+    const titleEl = document.getElementById('catalog-title');
+    const tableBody = document.getElementById('catalog-table-body');
+
+    // Map catalog names to user-friendly titles
+    const catalogTitles = {
+        'sat_cfdi_uses': 'Catálogo de Uso de CFDI',
+        'sat_payment_forms': 'Catálogo de Formas de Pago',
+        'sat_payment_methods': 'Catálogo de Métodos de Pago',
+        'sat_units': 'Catálogo de Unidades de Medida'
+    };
+
+    if (!catalogName || !catalogTitles[catalogName]) {
+        titleEl.textContent = 'Catálogo no válido';
+        return;
+    }
+
+    // Set the page title
+    titleEl.textContent = catalogTitles[catalogName];
+
+    const loadCatalog = async () => {
+        try {
+            const response = await fetch(`${API_BASE_URL}sat_catalogs.php`);
+            const result = await response.json();
+
+            if (result.status === 'success') {
+                // The API returns all catalogs, so we need to select the one we want
+                // The key in the response matches the end of the table name (e.g., 'cfdi_uses')
+                const keyName = catalogName.replace('sat_', '');
+                const catalogData = result.data[keyName];
+
+                if (catalogData) {
+                    tableBody.innerHTML = Object.entries(catalogData).map(([key, value]) => `
+                        <tr>
+                            <td>${key}</td>
+                            <td>${value}</td>
+                        </tr>
+                    `).join('');
+                    initializeDataTable('#catalog-table', catalogTitles[catalogName]);
+                } else {
+                     tableBody.innerHTML = `<tr><td colspan="2">No se encontraron datos para este catálogo.</td></tr>`;
+                }
+            } else {
+                M.toast({ html: 'Error al cargar el catálogo.' });
+            }
+        } catch (error) {
+            console.error('Error loading catalog:', error);
+            M.toast({ html: 'Error de red al cargar el catálogo.' });
+        }
+    };
+
+    loadCatalog();
+}
 
 /**
  * Generic helper to initialize a DataTable on a given table.
@@ -33,13 +99,13 @@ function initializeDataTable(tableSelector, pageTitle) {
         buttons: [
             {
                 extend: 'excelHtml5',
-                text: 'Exportar a Excel',
+                text: '<i class="material-icons left">description</i>Excel',
                 title: pageTitle,
                 className: 'btn-small waves-effect waves-light green'
             },
             {
                 extend: 'pdfHtml5',
-                text: 'Exportar a PDF',
+                text: '<i class="material-icons left">picture_as_pdf</i>PDF',
                 title: pageTitle,
                 className: 'btn-small waves-effect waves-light red'
             }
@@ -186,11 +252,27 @@ function handleCustomersPage() {
  */
 function handleProductsPage() {
     const apiUrl = `${API_BASE_URL}products.php`;
+    const satApiUrl = `${API_BASE_URL}sat_catalogs.php`;
     const tableBody = document.getElementById('products-table-body');
     const form = document.getElementById('form-product');
     const modal = M.Modal.getInstance(document.getElementById('modal-product'));
     const modalTitle = document.getElementById('modal-product-title');
     const productIdField = document.getElementById('product-id');
+    const unitSelect = document.getElementById('product-sat-unit-key');
+
+    let satCatalogs = {};
+
+    // --- Populate SAT Unit Select ---
+    const populateSatUnitSelect = () => {
+        if (satCatalogs.units) {
+            unitSelect.innerHTML = '<option value="" disabled selected>Seleccione una unidad</option>';
+            for (const [key, value] of Object.entries(satCatalogs.units)) {
+                unitSelect.innerHTML += `<option value="${key}">${key} - ${value}</option>`;
+            }
+        }
+        // Re-initialize the select with Materialize
+        M.FormSelect.init(unitSelect);
+    };
 
     // --- Load Products ---
     const loadProducts = async () => {
@@ -201,9 +283,10 @@ function handleProductsPage() {
                 tableBody.innerHTML = result.data.map(product => `
                     <tr>
                         <td>${product.sku}</td>
+                        <td>${product.sat_product_key}</td>
                         <td>${product.name}</td>
+                        <td>${product.sat_unit_key} - ${satCatalogs.units[product.sat_unit_key] || 'N/A'}</td>
                         <td>$${parseFloat(product.price).toFixed(2)}</td>
-                        <td>${(parseFloat(product.tax_rate) * 100).toFixed(0)}%</td>
                         <td>
                             <a href="#" class="btn-small waves-effect waves-light blue edit-btn" data-id="${product.id}"><i class="material-icons">edit</i></a>
                             <a href="#" class="btn-small waves-effect waves-light red delete-btn" data-id="${product.id}"><i class="material-icons">delete</i></a>
@@ -215,6 +298,25 @@ function handleProductsPage() {
         } catch (error) {
             console.error('Error loading products:', error);
             M.toast({ html: 'Error al cargar productos' });
+        }
+    };
+
+    // --- Load Initial Data (SAT Catalogs) ---
+    const loadInitialData = async () => {
+        try {
+            const response = await fetch(satApiUrl);
+            const result = await response.json();
+            if (result.status === 'success') {
+                satCatalogs = result.data;
+                populateSatUnitSelect();
+                // Now that we have the catalogs, load the products
+                loadProducts();
+            } else {
+                M.toast({ html: 'Error al cargar catálogos del SAT.' });
+            }
+        } catch (error) {
+            console.error('Error loading SAT catalogs:', error);
+            M.toast({ html: 'Error de red al cargar catálogos.' });
         }
     };
 
@@ -238,7 +340,7 @@ function handleProductsPage() {
             if (result.status === 'success') {
                 M.toast({ html: `Producto ${id ? 'actualizado' : 'creado'} con éxito` });
                 modal.close();
-                loadProducts();
+                loadProducts(); // Reload products to show changes
             } else {
                 M.toast({ html: `Error: ${result.message}` });
             }
@@ -266,10 +368,14 @@ function handleProductsPage() {
                     modalTitle.textContent = 'Editar Producto';
                     productIdField.value = product.id;
                     form.elements['sku'].value = product.sku;
+                    form.elements['sat_product_key'].value = product.sat_product_key;
                     form.elements['name'].value = product.name;
-                    form.elements['unit_key'].value = product.unit_key;
+                    form.elements['sat_unit_key'].value = product.sat_unit_key;
                     form.elements['price'].value = product.price;
                     form.elements['tax_rate'].value = product.tax_rate;
+
+                    // Re-initialize the select to show the correct value
+                    M.FormSelect.init(unitSelect);
                     M.updateTextFields();
                     modal.open();
                 }
@@ -304,10 +410,13 @@ function handleProductsPage() {
         form.reset();
         productIdField.value = '';
         form.elements['tax_rate'].value = '0.16'; // Default tax rate
+        // Ensure the select is reset to its default state
+        unitSelect.value = "";
+        M.FormSelect.init(unitSelect);
     });
 
     // Initial load
-    loadProducts();
+    loadInitialData();
 }
 
 /**

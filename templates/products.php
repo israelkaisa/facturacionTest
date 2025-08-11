@@ -9,10 +9,11 @@
     <table id="products-table" class="striped responsive-table">
         <thead>
             <tr>
-                <th>SKU (Clave SAT)</th>
+                <th>SKU</th>
+                <th>Clave SAT</th>
                 <th>Nombre (Descripción)</th>
+                <th>Unidad</th>
                 <th>Precio Unitario</th>
-                <th>Tasa de Impuesto</th>
                 <th>Acciones</th>
             </tr>
         </thead>
@@ -27,23 +28,33 @@
             <h4 id="modal-product-title">Agregar Producto</h4>
             <form id="form-product">
                 <input type="hidden" id="product-id" name="id">
-                <div class="input-field">
-                    <input id="product-sku" type="text" name="sku" required>
-                    <label for="product-sku">SKU (Clave Producto/Servicio)</label>
+                <div class="row">
+                    <div class="input-field col s6">
+                        <input id="product-sku" type="text" name="sku" required>
+                        <label for="product-sku">SKU (Código Interno)</label>
+                    </div>
+                    <div class="input-field col s6">
+                        <input id="product-sat-key" type="text" name="sat_product_key" required>
+                        <label for="product-sat-key">Clave de Producto/Servicio (SAT)</label>
+                    </div>
                 </div>
                 <div class="input-field">
                     <input id="product-name" type="text" name="name" required>
                     <label for="product-name">Nombre (Descripción)</label>
                 </div>
-                <div class="input-field">
-                    <input id="product-unit-key" type="text" name="unit_key" required>
-                    <label for="product-unit-key">Clave de Unidad (SAT)</label>
+                <div class="row">
+                    <div class="input-field col s6">
+                        <select id="product-sat-unit-key" name="sat_unit_key" required>
+                            <option value="" disabled selected>Cargando...</option>
+                        </select>
+                        <label for="product-sat-unit-key">Unidad de Medida (SAT)</label>
+                    </div>
+                    <div class="input-field col s6">
+                        <input id="product-price" type="number" step="0.01" name="price" required>
+                        <label for="product-price">Precio Unitario</label>
+                    </div>
                 </div>
-                <div class="input-field">
-                    <input id="product-price" type="number" step="0.01" name="price" required>
-                    <label for="product-price">Precio Unitario</label>
-                </div>
-                <div class="input-field">
+                 <div class="input-field">
                     <input id="product-tax-rate" type="number" step="0.01" name="tax_rate" required value="0.16">
                     <label for="product-tax-rate">Tasa de Impuesto (ej. 0.16)</label>
                 </div>

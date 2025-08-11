@@ -4,6 +4,7 @@
 
 require_once 'src/config/config.php';
 require_once 'src/lib/Database.php';
+require_once 'seed_sat_units.php'; // Include the new seeder
 
 // --- Data Definitions ---
 const SAT_USO_CFDI_DATA = [
@@ -52,6 +53,9 @@ try {
         }
         echo "OK.\n";
     }
+
+    // Seed the new SAT units table
+    seed_sat_units($db->dbh);
 
     echo "\n¡Siembra de catálogos completada con éxito!\n";
 
