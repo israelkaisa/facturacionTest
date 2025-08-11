@@ -12,7 +12,8 @@
                 <th>Nombre (Razón Social)</th>
                 <th>RFC</th>
                 <th>Email</th>
-                <th>Teléfono</th>
+                <th>Dirección</th>
+                <th>C.P.</th>
                 <th>Acciones</th>
             </tr>
         </thead>
@@ -36,8 +37,12 @@
                     <label for="customer-rfc">RFC</label>
                 </div>
                 <div class="input-field">
-                    <input id="customer-address" type="text" name="address" required>
+                    <textarea id="customer-address" name="address" class="materialize-textarea" required></textarea>
                     <label for="customer-address">Dirección Fiscal</label>
+                </div>
+                <div class="input-field">
+                    <input id="customer-postal-code" type="text" name="postal_code" required>
+                    <label for="customer-postal-code">Código Postal</label>
                 </div>
                 <div class="input-field">
                     <input id="customer-email" type="email" name="email" required>

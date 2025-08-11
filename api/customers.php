@@ -41,7 +41,7 @@ try {
             $data = json_decode(file_get_contents('php://input'), true);
 
             // --- Input Validation ---
-            $required_fields = ['name', 'rfc', 'address', 'email'];
+            $required_fields = ['name', 'rfc', 'address', 'postal_code', 'email'];
             foreach ($required_fields as $field) {
                 if (empty($data[$field])) {
                     http_response_code(400); // Bad Request
@@ -71,7 +71,7 @@ try {
                 $data = json_decode(file_get_contents('php://input'), true);
 
                 // --- Input Validation ---
-                $required_fields = ['name', 'rfc', 'address', 'email'];
+                $required_fields = ['name', 'rfc', 'address', 'postal_code', 'email'];
                 foreach ($required_fields as $field) {
                     if (empty($data[$field])) {
                         http_response_code(400); // Bad Request

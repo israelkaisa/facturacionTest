@@ -17,6 +17,27 @@ document.addEventListener('DOMContentLoaded', function() {
     if (document.getElementById('sat-catalog-page')) {
         handleSatCatalogPage();
     }
+    if (document.getElementById('invoices-page')) {
+        handleInvoicesPage();
+    }
+    if (document.getElementById('invoice-form-page')) {
+        handleInvoiceFormPage();
+    }
+    if (document.getElementById('quotes-page')) {
+        handleQuotesPage();
+    }
+    if (document.getElementById('quote-form-page')) {
+        handleQuoteFormPage();
+    }
+    if (document.getElementById('orders-page')) {
+        handleOrdersPage();
+    }
+    if (document.getElementById('order-form-page')) {
+        handleOrderFormPage();
+    }
+    if (document.getElementById('document-view-page')) {
+        handleDocumentViewPage();
+    }
 });
 
 /**
@@ -145,7 +166,8 @@ function handleCustomersPage() {
                         customer.name,
                         customer.rfc,
                         customer.email,
-                        customer.phone,
+                        customer.address,
+                        customer.postal_code,
                         actions
                     ];
                 });
@@ -220,8 +242,10 @@ function handleCustomersPage() {
                     form.elements['name'].value = customer.name;
                     form.elements['rfc'].value = customer.rfc;
                     form.elements['address'].value = customer.address;
+                    form.elements['postal_code'].value = customer.postal_code;
                     form.elements['email'].value = customer.email;
                     form.elements['phone'].value = customer.phone;
+                    M.textareaAutoResize(form.elements['address']); // Recalculate textarea size
                     M.updateTextFields(); // Important for Materialize labels
                     modal.open();
                 }
@@ -726,42 +750,6 @@ async function handleInvoiceFormPage() {
     });
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize all Materialize components
-    M.AutoInit();
-
-    const API_BASE_URL = 'api/';
-
-    // Check which page is currently active
-    if (document.getElementById('customers-page')) {
-        handleCustomersPage();
-    }
-    if (document.getElementById('products-page')) {
-        handleProductsPage();
-    }
-    if (document.getElementById('invoices-page')) {
-        handleInvoicesPage();
-    }
-    if (document.getElementById('invoice-form-page')) {
-        handleInvoiceFormPage();
-    }
-    if (document.getElementById('document-view-page')) {
-        handleDocumentViewPage();
-    }
-    if (document.getElementById('quotes-page')) {
-        handleQuotesPage();
-    }
-    if (document.getElementById('quote-form-page')) {
-        handleQuoteFormPage();
-    }
-    if (document.getElementById('orders-page')) {
-        handleOrdersPage();
-    }
-    if (document.getElementById('order-form-page')) {
-        handleOrderFormPage();
-    }
-});
-
 /**
  * Handles logic for the Quotes List page
  */
@@ -934,7 +922,7 @@ async function handleQuoteFormPage() {
         addItemRow();
     }
     M.Datepicker.init(document.querySelectorAll('.datepicker'), { format: 'yyyy-mm-dd', autoClose: true });
-    
+
 }
 
 /**

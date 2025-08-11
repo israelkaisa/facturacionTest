@@ -28,6 +28,7 @@ CREATE TABLE `customers` (
   `name` varchar(255) NOT NULL COMMENT 'Razón Social',
   `rfc` varchar(13) NOT NULL,
   `address` text NOT NULL COMMENT 'Dirección Fiscal',
+  `postal_code` varchar(10) NOT NULL COMMENT 'Código Postal',
   `email` varchar(255) NOT NULL,
   `phone` varchar(20) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),

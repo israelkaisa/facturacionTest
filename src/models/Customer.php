@@ -40,12 +40,13 @@ class Customer {
      * @param array $data Associative array with customer data (name, rfc, address, email, phone)
      */
     public function create($data) {
-        $this->db->query("INSERT INTO customers (name, rfc, address, email, phone) VALUES (:name, :rfc, :address, :email, :phone)");
+        $this->db->query("INSERT INTO customers (name, rfc, address, postal_code, email, phone) VALUES (:name, :rfc, :address, :postal_code, :email, :phone)");
 
         // Bind values
         $this->db->bind(':name', $data['name']);
         $this->db->bind(':rfc', $data['rfc']);
         $this->db->bind(':address', $data['address']);
+        $this->db->bind(':postal_code', $data['postal_code']);
         $this->db->bind(':email', $data['email']);
         $this->db->bind(':phone', $data['phone']);
 
@@ -63,13 +64,14 @@ class Customer {
      * @param array $data Associative array with customer data
      */
     public function update($id, $data) {
-        $this->db->query("UPDATE customers SET name = :name, rfc = :rfc, address = :address, email = :email, phone = :phone WHERE id = :id");
+        $this->db->query("UPDATE customers SET name = :name, rfc = :rfc, address = :address, postal_code = :postal_code, email = :email, phone = :phone WHERE id = :id");
 
         // Bind values
         $this->db->bind(':id', $id);
         $this->db->bind(':name', $data['name']);
         $this->db->bind(':rfc', $data['rfc']);
         $this->db->bind(':address', $data['address']);
+        $this->db->bind(':postal_code', $data['postal_code']);
         $this->db->bind(':email', $data['email']);
         $this->db->bind(':phone', $data['phone']);
 

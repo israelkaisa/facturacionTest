@@ -69,8 +69,8 @@ class Document {
                 VALUES (:customer_id, :type, :folio, :status, :cfdi_use, :payment_method, :payment_form, :subtotal, :tax, :total, :due_date)
             ");
 
-            // Generate a simple folio for now
-            $folio = strtoupper(substr($data['type'], 0, 1)) . '-' . time();
+        // Generate a new random folio
+        $folio = $this->_generate_folio();
 
             $this->db->bind(':customer_id', $data['customer_id']);
             $this->db->bind(':type', $data['type']);
@@ -162,6 +162,17 @@ class Document {
         }
 
         return true; // No update was needed, but operation is successful
+    }
+
+    /**
+     * Generates a random folio string (3 letters, 10 numbers).
+     * @return string The generated folio.
+     */
+    private function _generate_folio() {
+        $letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $random_letters = substr(str_shuffle(str_repeat($letters, 3)), 0, 3);
+        $random_numbers = str_pad(mt_rand(0, 9999999999), 10, '0', STR_PAD_LEFT);
+        return $random_letters . $random_numbers;
     }
 }
 ?>
