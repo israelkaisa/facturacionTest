@@ -161,8 +161,11 @@ function handleCustomersPage() {
     };
 
     // --- Form Submission (Create/Update) ---
+    const submitButton = form.querySelector('button[type="submit"]');
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
+        submitButton.disabled = true;
+
         const formData = new FormData(form);
         const data = Object.fromEntries(formData.entries());
         const id = data.id;
@@ -187,6 +190,8 @@ function handleCustomersPage() {
         } catch (error) {
             console.error('Error saving customer:', error);
             M.toast({ html: 'Error al guardar cliente' });
+        } finally {
+            submitButton.disabled = false;
         }
     });
 
@@ -329,8 +334,11 @@ function handleProductsPage() {
     };
 
     // --- Form Submission (Create/Update) ---
+    const submitButton = form.querySelector('button[type="submit"]');
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
+        submitButton.disabled = true;
+
         const formData = new FormData(form);
         const data = Object.fromEntries(formData.entries());
         const id = data.id;
@@ -355,6 +363,8 @@ function handleProductsPage() {
         } catch (error) {
             console.error('Error saving product:', error);
             M.toast({ html: 'Error al guardar producto' });
+        } finally {
+            submitButton.disabled = false;
         }
     });
 
