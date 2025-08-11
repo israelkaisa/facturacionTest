@@ -1,11 +1,11 @@
+const API_BASE_URL = 'api/';
+
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize all Materialize components
     M.AutoInit();
     // Initialize dropdowns specifically
     var dropdowns = document.querySelectorAll('.dropdown-trigger');
     M.Dropdown.init(dropdowns);
-
-    const API_BASE_URL = 'api/';
 
     // Check which page is currently active
     if (document.getElementById('customers-page')) {
