@@ -721,7 +721,7 @@ async function handleInvoiceFormPage() {
             });
             const result = await response.json();
             if (result.status === 'success') {
-                M.toast({ html: 'Factura creada con éxito!' });
+                M.toast({ html: `Factura creada con éxito! Folio: ${result.data.folio}` });
                 // Redirect to the invoices list
                 window.location.href = 'index.php?page=invoices';
             } else {
@@ -909,7 +909,7 @@ async function handleQuoteFormPage() {
         });
         const result = await response.json();
         if (result.status === 'success') {
-            M.toast({ html: 'Cotización creada con éxito!' });
+            M.toast({ html: `Cotización creada con éxito! Folio: ${result.data.folio}` });
             window.location.href = 'index.php?page=quotes';
         } else {
             M.toast({ html: `Error: ${result.message}` });
@@ -1081,7 +1081,7 @@ async function handleOrderFormPage() {
         });
         const result = await response.json();
         if (result.status === 'success') {
-            M.toast({ html: 'Orden de venta creada con éxito!' });
+            M.toast({ html: `Orden de venta creada con éxito! Folio: ${result.data.folio}` });
             window.location.href = 'index.php?page=orders';
         } else {
             M.toast({ html: `Error: ${result.message}` });

@@ -104,7 +104,7 @@ class Document {
             }
 
             $this->db->getDbh()->commit();
-            return $documentId;
+            return ['id' => $documentId, 'folio' => $folio];
 
         } catch (Exception $e) {
             $this->db->getDbh()->rollBack();
