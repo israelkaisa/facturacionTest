@@ -1224,7 +1224,7 @@ function handleDocumentViewPage() {
 
     const init = async () => {
         await fetchSatCatalogs();
-        await loadInvoiceData();
+        await loadDocumentData();
     };
 
     // --- Event Listener for Cancel Button ---

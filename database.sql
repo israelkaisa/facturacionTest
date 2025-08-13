@@ -80,6 +80,7 @@ CREATE TABLE `documents` (
   `customer_id` int(11) NOT NULL,
   `type` enum('quote','order','invoice') NOT NULL,
   `folio` varchar(20) NOT NULL,
+  `source_folio` varchar(20) DEFAULT NULL,
   `status` enum('draft','sent','partial','paid','cancelled','completed') NOT NULL,
   `cfdi_use` varchar(5) DEFAULT NULL COMMENT 'Uso de CFDI (SAT)',
   `payment_method` varchar(5) DEFAULT NULL COMMENT 'Método de pago (PUE/PPD)',
