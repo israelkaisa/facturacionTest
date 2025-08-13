@@ -156,7 +156,7 @@ function initializeDataTable(tableSelector, pageTitle) {
  */
 function handleCustomersPage() {
     const apiUrl = `${API_BASE_URL}customers.php`;
-    const postalCodeApiUrl = 'https://codigos-postales-mx.herokuapp.com/api/codigos-postales/';
+    const postalCodeApiUrl = `${API_BASE_URL}postal_code_proxy.php`; // Use the local proxy
 
     const form = document.getElementById('form-customer');
     const modal = M.Modal.getInstance(document.getElementById('modal-customer'));
@@ -184,7 +184,7 @@ function handleCustomersPage() {
         M.FormSelect.init(neighborhoodSelect);
 
         try {
-            const response = await fetch(`${postalCodeApiUrl}${postalCode}`);
+            const response = await fetch(`${postalCodeApiUrl}?cp=${postalCode}`);
             if (!response.ok) throw new Error('Network response was not ok.');
 
             const data = await response.json();
