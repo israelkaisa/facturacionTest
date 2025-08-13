@@ -527,6 +527,7 @@ async function handleInvoiceFormPage() {
     // --- Pre-population from reference document ---
     const populateFormFromReference = () => {
         const referenceDoc = JSON.parse(sessionStorage.getItem('referenceDocument'));
+        console.log('Reference Document:', referenceDoc); // Debugging line
         if (referenceDoc) {
             // Set customer
             customerSelect.value = referenceDoc.customer_id;
@@ -617,7 +618,9 @@ async function handleInvoiceFormPage() {
         // Manually trigger price update for populated row
         if(itemToPopulate){
              const price = productSelect.options[productSelect.selectedIndex].dataset.price || 0;
-             itemsContainer.lastChild.querySelector('.price').value = parseFloat(price).toFixed(2);
+             if (itemsContainer.lastElementChild) {
+                itemsContainer.lastElementChild.querySelector('.price').value = parseFloat(price).toFixed(2);
+             }
         }
     };
 
