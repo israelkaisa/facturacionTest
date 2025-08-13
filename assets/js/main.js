@@ -113,7 +113,7 @@ function initializeDataTable(tableSelector, pageTitle) {
 
     // Otherwise, initialize it and return the new instance
     return $(tableSelector).DataTable({
-        dom: '<"top"lfB>rt<"bottom"ip><"clear">',
+        dom: '<"dt-header"Bf>rt<"dt-footer"ip>',
         buttons: [
             {
                 extend: 'excelHtml5',
@@ -682,6 +682,14 @@ async function handleInvoiceFormPage() {
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
+        // --- Date Validation ---
+        const emissionDate = new Date(form.elements['date'].value);
+        const dueDate = new Date(form.elements['due_date'].value);
+        if (dueDate < emissionDate) {
+            M.toast({ html: 'La fecha de vencimiento no puede ser anterior a la fecha de emisión.' });
+            return;
+        }
+
         const subtotal = parseFloat(document.getElementById('invoice-subtotal').textContent.replace('$', ''));
         const tax = parseFloat(document.getElementById('invoice-tax').textContent.replace('$', ''));
         const total = parseFloat(document.getElementById('invoice-total').textContent.replace('$', ''));
@@ -886,6 +894,16 @@ async function handleQuoteFormPage() {
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
+
+        // --- Date Validation ---
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Normalize today's date
+        const dueDate = new Date(form.elements['due_date'].value);
+        if (dueDate < today) {
+            M.toast({ html: 'La fecha de vencimiento no puede ser anterior a hoy.' });
+            return;
+        }
+
         const subtotal = parseFloat(document.getElementById('quote-subtotal').textContent.replace('$', ''));
         const tax = parseFloat(document.getElementById('quote-tax').textContent.replace('$', ''));
         const total = parseFloat(document.getElementById('quote-total').textContent.replace('$', ''));
@@ -1081,6 +1099,15 @@ async function handleOrderFormPage() {
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
+
+        // --- Date Validation ---
+        const emissionDate = new Date(form.elements['date'].value);
+        const dueDate = new Date(form.elements['due_date'].value);
+        if (dueDate < emissionDate) {
+            M.toast({ html: 'La fecha de entrega no puede ser anterior a la fecha de emisión.' });
+            return;
+        }
+
         const subtotal = parseFloat(document.getElementById('order-subtotal').textContent.replace('$', ''));
         const tax = parseFloat(document.getElementById('order-tax').textContent.replace('$', ''));
         const total = parseFloat(document.getElementById('order-total').textContent.replace('$', ''));

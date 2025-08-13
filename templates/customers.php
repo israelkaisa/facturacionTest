@@ -41,7 +41,7 @@
                     <label for="customer-address">Dirección Fiscal</label>
                 </div>
                 <div class="input-field">
-                    <input id="customer-postal-code" type="text" name="postal_code" required>
+                    <input id="customer-postal-code" type="text" name="postal_code" required pattern="[0-9]{5,6}" title="5 a 6 dígitos numéricos.">
                     <label for="customer-postal-code">Código Postal</label>
                 </div>
                 <div class="input-field">
@@ -49,7 +49,7 @@
                     <label for="customer-email">Email</label>
                 </div>
                 <div class="input-field">
-                    <input id="customer-phone" type="text" name="phone">
+                    <input id="customer-phone" type="tel" name="phone" pattern="[0-9]{10}" title="10 dígitos numéricos.">
                     <label for="customer-phone">Teléfono</label>
                 </div>
             </form>

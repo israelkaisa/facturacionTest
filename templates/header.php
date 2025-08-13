@@ -22,9 +22,9 @@
             <a href="index.php" class="brand-logo">Facturación</a>
             <a href="#" data-target="mobile-nav" class="sidenav-trigger"><i class="material-icons">menu</i></a>
             <ul class="right hide-on-med-and-down">
-                <li><a href="index.php?page=invoices">Facturas</a></li>
                 <li><a href="index.php?page=quotes">Cotizaciones</a></li>
                 <li><a href="index.php?page=orders">Órdenes de Venta</a></li>
+                <li><a href="index.php?page=invoices">Facturas</a></li>
                 <li><a href="index.php?page=products">Productos</a></li>
                 <li><a href="index.php?page=customers">Clientes</a></li>
                 <li><a class="dropdown-trigger" href="#!" data-target="dropdown-sat-catalogs">Catálogos SAT<i class="material-icons right">arrow_drop_down</i></a></li>
@@ -42,9 +42,9 @@
     </ul>
 
     <ul class="sidenav" id="mobile-nav">
-        <li><a href="index.php?page=invoices">Facturas</a></li>
         <li><a href="index.php?page=quotes">Cotizaciones</a></li>
         <li><a href="index.php?page=orders">Órdenes de Venta</a></li>
+        <li><a href="index.php?page=invoices">Facturas</a></li>
         <li><a href="index.php?page=products">Productos</a></li>
         <li><a href="index.php?page=customers">Clientes</a></li>
         <li class="divider"></li>
