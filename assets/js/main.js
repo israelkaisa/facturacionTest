@@ -185,10 +185,10 @@ function handleCustomersPage() {
 
         try {
             const response = await fetch(`${postalCodeApiUrl}?cp=${postalCode}`);
-            if (!response.ok) throw new Error('Network response was not ok.');
+            const result = await response.json();
 
-            const data = await response.json();
-            if (data && data.length > 0) {
+            if (result.status === 'success' && result.data && result.data.length > 0) {
+                const data = result.data;
                 cityInput.value = data[0].municipio;
                 stateInput.value = data[0].estado;
 
