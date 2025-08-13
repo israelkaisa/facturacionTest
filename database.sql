@@ -94,6 +94,7 @@ CREATE TABLE `documents` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `folio` (`folio`),
   KEY `customer_id` (`customer_id`),
+  KEY `source_folio_idx` (`source_folio`),
   CONSTRAINT `documents_ibfk_1` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 

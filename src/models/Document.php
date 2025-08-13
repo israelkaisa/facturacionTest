@@ -65,8 +65,8 @@ class Document {
 
             // 1. Insert into documents table
             $this->db->query("
-                INSERT INTO documents (customer_id, type, folio, status, cfdi_use, payment_method, payment_form, subtotal, tax, total, due_date)
-                VALUES (:customer_id, :type, :folio, :status, :cfdi_use, :payment_method, :payment_form, :subtotal, :tax, :total, :due_date)
+            INSERT INTO documents (customer_id, type, folio, source_folio, status, cfdi_use, payment_method, payment_form, subtotal, tax, total, due_date)
+            VALUES (:customer_id, :type, :folio, :source_folio, :status, :cfdi_use, :payment_method, :payment_form, :subtotal, :tax, :total, :due_date)
             ");
 
         // Generate a new random folio
@@ -75,6 +75,7 @@ class Document {
             $this->db->bind(':customer_id', $data['customer_id']);
             $this->db->bind(':type', $data['type']);
             $this->db->bind(':folio', $folio);
+        $this->db->bind(':source_folio', $data['source_folio'] ?? null);
             $this->db->bind(':status', 'draft'); // Start as draft
             $this->db->bind(':cfdi_use', $data['cfdi_use'] ?? null);
             $this->db->bind(':payment_method', $data['payment_method'] ?? null);

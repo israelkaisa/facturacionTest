@@ -530,6 +530,8 @@ async function handleInvoiceFormPage() {
         if (referenceDoc) {
             // Set customer
             customerSelect.value = referenceDoc.customer_id;
+            // Set the source folio in the hidden input
+            document.getElementById('invoice-source-folio').value = referenceDoc.folio;
 
             // Clear existing empty item rows before adding new ones
             itemsContainer.innerHTML = '';
@@ -975,6 +977,9 @@ async function handleOrderFormPage() {
         const referenceDoc = JSON.parse(sessionStorage.getItem('referenceDocument'));
         if (referenceDoc) {
             customerSelect.value = referenceDoc.customer_id;
+            // Set the source folio in the hidden input
+            document.getElementById('order-source-folio').value = referenceDoc.folio;
+
             itemsContainer.innerHTML = '';
             referenceDoc.items.forEach(item => addItemRow(item));
             M.FormSelect.init(document.querySelectorAll('select'));
