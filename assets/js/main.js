@@ -1292,6 +1292,12 @@ function handleDocumentViewPage() {
     const paymentsHistoryBody = document.getElementById('payments-history-body');
     const paymentModal = M.Modal.getInstance(document.getElementById('modal-payment'));
 
+    // Initialize datepicker for the payment modal
+    M.Datepicker.init(document.querySelector('#payment-date'), {
+        format: 'yyyy-mm-dd',
+        autoClose: true
+    });
+
     const loadPayments = async () => {
         try {
             const response = await fetch(`${API_BASE_URL}payments.php?invoice_id=${documentId}`);
