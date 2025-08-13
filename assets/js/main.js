@@ -978,14 +978,19 @@ async function handleOrderFormPage() {
         if (referenceDoc) {
             customerSelect.value = referenceDoc.customer_id;
             // Set the source folio in the hidden input
-            document.getElementById('order-source-folio').value = referenceDoc.folio;
+            const sourceFolioInput = document.getElementById('order-source-folio');
+            if(sourceFolioInput) {
+                sourceFolioInput.value = referenceDoc.folio;
+            }
 
             itemsContainer.innerHTML = '';
             referenceDoc.items.forEach(item => addItemRow(item));
             M.FormSelect.init(document.querySelectorAll('select'));
             updateTotals();
             sessionStorage.removeItem('referenceDocument');
+            return true; // Indicate that form was populated
         }
+        return false; // Indicate no reference doc was found
     };
 
     const fetchData = async () => {
@@ -1006,14 +1011,28 @@ async function handleOrderFormPage() {
         M.FormSelect.init(document.querySelectorAll('select'));
     };
 
-    const addItemRow = () => {
+    const addItemRow = (itemToPopulate = null) => {
         const templateContent = itemTemplate.content.cloneNode(true);
         const productSelect = templateContent.querySelector('.product-select');
+        const quantityInput = templateContent.querySelector('.quantity');
+
         products.forEach(p => {
-            productSelect.innerHTML += `<option value="${p.id}" data-price="${p.price}" data-tax-rate="${p.tax_rate}">${p.name}</option>`;
+            const isSelected = itemToPopulate && p.id == itemToPopulate.product_id;
+            productSelect.innerHTML += `<option value="${p.id}" data-price="${p.price}" data-tax-rate="${p.tax_rate}" ${isSelected ? 'selected' : ''}>${p.name}</option>`;
         });
+
+        if(itemToPopulate){
+            quantityInput.value = itemToPopulate.quantity;
+        }
+
         itemsContainer.appendChild(templateContent);
         M.FormSelect.init(itemsContainer.querySelectorAll('select:last-of-type'));
+
+        if(itemToPopulate){
+             const price = productSelect.options[productSelect.selectedIndex].dataset.price || 0;
+             const priceInput = itemsContainer.querySelector('.item-row:last-child .price');
+             if(priceInput) priceInput.value = parseFloat(price).toFixed(2);
+        }
     };
 
     const updateTotals = () => {
@@ -1036,7 +1055,7 @@ async function handleOrderFormPage() {
         document.getElementById('order-total').textContent = `$${(subtotal + tax).toFixed(2)}`;
     };
 
-    addItemBtn.addEventListener('click', addItemRow);
+    addItemBtn.addEventListener('click', () => addItemRow());
     itemsContainer.addEventListener('click', e => {
         if (e.target.closest('.remove-item-btn')) {
             e.target.closest('.item-row').remove();
@@ -1076,6 +1095,7 @@ async function handleOrderFormPage() {
         const data = {
             customer_id: formData.get('customer_id'),
             type: 'order',
+            source_folio: formData.get('source_folio'),
             due_date: new Date(formData.get('due_date')).toISOString().slice(0, 10), // Format to YYYY-MM-DD
             subtotal, tax, total, items
         };
@@ -1094,7 +1114,10 @@ async function handleOrderFormPage() {
     });
 
     await fetchData();
-    addItemRow();
+    const populated = populateFormFromReference();
+    if (!populated) {
+        addItemRow();
+    }
     M.Datepicker.init(document.querySelectorAll('.datepicker'), { format: 'yyyy-mm-dd', autoClose: true });
 }
 
