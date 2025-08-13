@@ -44,6 +44,7 @@
                 </div>
                 <div class="row">
                     <div class="input-field col s6">
+                        <input type="text" id="unit-key-search" placeholder="Buscar unidad...">
                         <select id="product-sat-unit-key" name="sat_unit_key" required>
                             <option value="" disabled selected>Cargando...</option>
                         </select>

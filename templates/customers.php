@@ -33,7 +33,7 @@
                     <label for="customer-name">Nombre (Razón Social)</label>
                 </div>
                 <div class="input-field">
-                    <input id="customer-rfc" type="text" name="rfc" required>
+                    <input id="customer-rfc" type="text" name="rfc" required pattern="^(([ÑA-Z|ña-z|&]{3}|[A-Z|a-z]{4})\d{2}((0[1-9]|1[012])(0[1-9]|1\d|2[0-8])|(0[13456789]|1[012])(29|30)|(0[13578]|1[02])31)(\w{2})([A|a|0-9]{1}))$|^(([ÑA-Z|ña-z|&]{3}|[A-Z|a-z]{4})([02468][048]|[13579][26])0229)(\w{2})([A|a|0-9]{1})$" title="Ingrese un RFC válido.">
                     <label for="customer-rfc">RFC</label>
                 </div>
                 <div class="input-field">
@@ -45,7 +45,7 @@
                     <label for="customer-postal-code">Código Postal</label>
                 </div>
                 <div class="input-field">
-                    <input id="customer-email" type="email" name="email" required>
+                    <input id="customer-email" type="email" name="email" required pattern="[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}" title="Ingrese una dirección de correo válida.">
                     <label for="customer-email">Email</label>
                 </div>
                 <div class="input-field">

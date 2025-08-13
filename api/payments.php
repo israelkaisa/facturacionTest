@@ -36,9 +36,28 @@ try {
         case 'POST':
             $data = json_decode(file_get_contents('php://input'), true);
 
-            if (empty($data['invoice_id']) || empty($data['amount']) || empty($data['payment_date'])) {
+            if (empty($data['invoice_id']) || !isset($data['amount']) || empty($data['payment_date'])) {
                  http_response_code(400);
-                 $response = ['status' => 'error', 'message' => 'Missing required payment fields.'];
+                 $response = ['status' => 'error', 'message' => 'Faltan campos de pago requeridos.'];
+                 break;
+            }
+
+            // --- Payment Amount Validation ---
+            $invoice = $document_model->getById($data['invoice_id']);
+            if (!$invoice) {
+                http_response_code(404);
+                $response = ['status' => 'error', 'message' => 'La factura asociada no fue encontrada.'];
+                break;
+            }
+
+            $totalPaid = $payment_model->getTotalPaidForInvoice($data['invoice_id']);
+            $newPaymentAmount = floatval($data['amount']);
+            $invoiceTotal = floatval($invoice['total']);
+
+            // Using a small tolerance for float comparison
+            if (($totalPaid + $newPaymentAmount) > ($invoiceTotal + 0.001)) {
+                 http_response_code(400);
+                 $response = ['status' => 'error', 'message' => 'El monto del pago excede el saldo de la factura. Saldo actual: ' . ($invoiceTotal - $totalPaid)];
                  break;
             }
 

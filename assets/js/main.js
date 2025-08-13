@@ -105,6 +105,21 @@ function handleSatCatalogPage() {
  * @param {string} tableSelector - The CSS selector for the table (e.g., '#customers-table').
  * @param {string} pageTitle - The title to use for PDF/Excel exports.
  */
+function filterSelect(searchInput, selectElement, originalOptions) {
+    const searchText = searchInput.value.toLowerCase();
+    const filteredOptions = originalOptions.filter(option =>
+        option.text.toLowerCase().includes(searchText) || option.value.toLowerCase().includes(searchText)
+    );
+
+    selectElement.innerHTML = '';
+    filteredOptions.forEach(option => {
+        // We need to clone the option to avoid issues with it being moved from the original array
+        selectElement.add(option.cloneNode(true));
+    });
+
+    M.FormSelect.init(selectElement);
+}
+
 function initializeDataTable(tableSelector, pageTitle) {
     // If the table has already been initialized, return the instance
     if ($.fn.DataTable.isDataTable(tableSelector)) {
@@ -300,17 +315,40 @@ function handleProductsPage() {
 
     let satCatalogs = {};
     const productsTable = initializeDataTable('#products-table', 'Lista de Productos');
+    let originalUnitOptions = [];
 
     // --- Populate SAT Unit Select ---
     const populateSatUnitSelect = () => {
         if (satCatalogs.units) {
-            unitSelect.innerHTML = '<option value="" disabled selected>Seleccione una unidad</option>';
+            let optionsHtml = '<option value="" disabled selected>Seleccione una unidad</option>';
             for (const [key, value] of Object.entries(satCatalogs.units)) {
-                unitSelect.innerHTML += `<option value="${key}">${key} - ${value}</option>`;
+                optionsHtml += `<option value="${key}">${key} - ${value}</option>`;
             }
+            unitSelect.innerHTML = optionsHtml;
+            originalUnitOptions = Array.from(unitSelect.options); // Store original options
         }
         M.FormSelect.init(unitSelect);
     };
+
+    // --- Search/Filter Logic for Unit Select ---
+    const unitSearchInput = document.getElementById('unit-key-search');
+    unitSearchInput.addEventListener('input', (e) => {
+        const searchText = e.target.value.toLowerCase();
+
+        // Filter the original options
+        const filteredOptions = originalUnitOptions.filter(option =>
+            option.text.toLowerCase().includes(searchText) || option.value.toLowerCase().includes(searchText)
+        );
+
+        // Repopulate the select with filtered options
+        unitSelect.innerHTML = '';
+        filteredOptions.forEach(option => {
+            unitSelect.add(option);
+        });
+
+        // Re-initialize the select to show the new options
+        M.FormSelect.init(unitSelect);
+    });
 
     // --- Load Products ---
     const loadProducts = async () => {
@@ -577,19 +615,33 @@ async function handleInvoiceFormPage() {
 
             // Populate SAT catalogs
             if (satResult.status === 'success') {
+                let cfdiOptions = '';
                 for (const [key, value] of Object.entries(satResult.data.cfdi_uses)) {
-                    cfdiUseSelect.innerHTML += `<option value="${key}">${key} - ${value}</option>`;
+                    cfdiOptions += `<option value="${key}">${key} - ${value}</option>`;
                 }
-                for (const [key, value] of Object.entries(satResult.data.payment_methods)) {
-                    paymentMethodSelect.innerHTML += `<option value="${key}">${key} - ${value}</option>`;
+                cfdiUseSelect.innerHTML = cfdiOptions;
+
+                let paymentFormOptions = '';
+                for (const [key, value] of Object.entries(satResult.data.payment_forms)) {
+                    paymentFormOptions += `<option value="${key}">${key} - ${value}</option>`;
                 }
-                 for (const [key, value] of Object.entries(satResult.data.payment_forms)) {
-                    paymentFormSelect.innerHTML += `<option value="${key}">${key} - ${value}</option>`;
-                }
+                paymentFormSelect.innerHTML = paymentFormOptions;
             }
 
             // Re-initialize Materialize selects
             M.FormSelect.init(document.querySelectorAll('select'));
+
+            // Store original options for filtering
+            const originalCfdiOptions = Array.from(cfdiUseSelect.options);
+            const originalPaymentFormOptions = Array.from(paymentFormSelect.options);
+
+            // Add search listeners
+            document.getElementById('cfdi-use-search').addEventListener('input', (e) => {
+                filterSelect(e.target, cfdiUseSelect, originalCfdiOptions);
+            });
+            document.getElementById('payment-form-search').addEventListener('input', (e) => {
+                filterSelect(e.target, paymentFormSelect, originalPaymentFormOptions);
+            });
 
         } catch (error) {
             console.error('Error fetching initial data:', error);
@@ -717,7 +769,6 @@ async function handleInvoiceFormPage() {
             customer_id: formData.get('customer_id'),
             type: 'invoice', // Hardcoded for now
             cfdi_use: formData.get('cfdi_use'),
-            payment_method: formData.get('payment_method'),
             payment_form: formData.get('payment_form'),
             due_date: new Date(formData.get('due_date')).toISOString().slice(0, 10), // Format to YYYY-MM-DD
             subtotal: subtotal,

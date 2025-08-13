@@ -36,6 +36,15 @@ class Customer {
     }
 
     /**
+     * Get customer by Email
+     */
+    public function findByEmail($email) {
+        $this->db->query("SELECT * FROM customers WHERE UPPER(email) = UPPER(:email)");
+        $this->db->bind(':email', $email);
+        return $this->db->single();
+    }
+
+    /**
      * Create a new customer
      * @param array $data Associative array with customer data (name, rfc, address, email, phone)
      */

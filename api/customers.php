@@ -54,6 +54,9 @@ try {
             if ($customer_model->findByRfc($data['rfc'])) {
                 http_response_code(409); // Conflict
                 $response = ['status' => 'error', 'message' => 'El RFC ya existe. Por favor, use uno diferente.'];
+            } elseif ($customer_model->findByEmail($data['email'])) {
+                http_response_code(409); // Conflict
+                $response = ['status' => 'error', 'message' => 'El correo electrónico ya está registrado.'];
             } else {
                 if ($customer_model->create($data)) {
                     http_response_code(201);
@@ -81,11 +84,17 @@ try {
                     }
                 }
 
-                $existing_customer = $customer_model->findByRfc($data['rfc']);
-
-                if ($existing_customer && $existing_customer['id'] != $id) {
+                $existing_by_rfc = $customer_model->findByRfc($data['rfc']);
+                if ($existing_by_rfc && $existing_by_rfc['id'] != $id) {
                     http_response_code(409); // Conflict
                     $response = ['status' => 'error', 'message' => 'El RFC ya pertenece a otro cliente.'];
+                    break;
+                }
+
+                $existing_by_email = $customer_model->findByEmail($data['email']);
+                if ($existing_by_email && $existing_by_email['id'] != $id) {
+                    http_response_code(409); // Conflict
+                    $response = ['status' => 'error', 'message' => 'El correo electrónico ya pertenece a otro cliente.'];
                 } else {
                     if ($customer_model->update($id, $data)) {
                         $response = ['status' => 'success', 'message' => 'Cliente actualizado con éxito.'];
