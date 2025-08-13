@@ -46,16 +46,19 @@ class Customer {
 
     /**
      * Create a new customer
-     * @param array $data Associative array with customer data (name, rfc, address, email, phone)
+     * @param array $data Associative array with customer data
      */
     public function create($data) {
-        $this->db->query("INSERT INTO customers (name, rfc, address, postal_code, email, phone) VALUES (:name, :rfc, :address, :postal_code, :email, :phone)");
+        $this->db->query("INSERT INTO customers (name, rfc, street_address, neighborhood, postal_code, city, state, email, phone) VALUES (:name, :rfc, :street_address, :neighborhood, :postal_code, :city, :state, :email, :phone)");
 
         // Bind values
         $this->db->bind(':name', $data['name']);
         $this->db->bind(':rfc', $data['rfc']);
-        $this->db->bind(':address', $data['address']);
+        $this->db->bind(':street_address', $data['street_address']);
+        $this->db->bind(':neighborhood', $data['neighborhood']);
         $this->db->bind(':postal_code', $data['postal_code']);
+        $this->db->bind(':city', $data['city']);
+        $this->db->bind(':state', $data['state']);
         $this->db->bind(':email', $data['email']);
         $this->db->bind(':phone', $data['phone']);
 
@@ -73,14 +76,17 @@ class Customer {
      * @param array $data Associative array with customer data
      */
     public function update($id, $data) {
-        $this->db->query("UPDATE customers SET name = :name, rfc = :rfc, address = :address, postal_code = :postal_code, email = :email, phone = :phone WHERE id = :id");
+        $this->db->query("UPDATE customers SET name = :name, rfc = :rfc, street_address = :street_address, neighborhood = :neighborhood, postal_code = :postal_code, city = :city, state = :state, email = :email, phone = :phone WHERE id = :id");
 
         // Bind values
         $this->db->bind(':id', $id);
         $this->db->bind(':name', $data['name']);
         $this->db->bind(':rfc', $data['rfc']);
-        $this->db->bind(':address', $data['address']);
+        $this->db->bind(':street_address', $data['street_address']);
+        $this->db->bind(':neighborhood', $data['neighborhood']);
         $this->db->bind(':postal_code', $data['postal_code']);
+        $this->db->bind(':city', $data['city']);
+        $this->db->bind(':state', $data['state']);
         $this->db->bind(':email', $data['email']);
         $this->db->bind(':phone', $data['phone']);
 

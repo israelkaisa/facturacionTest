@@ -36,13 +36,33 @@
                     <input id="customer-rfc" type="text" name="rfc" required maxlength="13" pattern="^(([ÑA-Z|ña-z|&]{3}|[A-Z|a-z]{4})\d{2}((0[1-9]|1[012])(0[1-9]|1\d|2[0-8])|(0[13456789]|1[012])(29|30)|(0[13578]|1[02])31)(\w{2})([A|a|0-9]{1}))$|^(([ÑA-Z|ña-z|&]{3}|[A-Z|a-z]{4})([02468][048]|[13579][26])0229)(\w{2})([A|a|0-9]{1})$" title="Ingrese un RFC válido.">
                     <label for="customer-rfc">RFC</label>
                 </div>
-                <div class="input-field">
-                    <textarea id="customer-address" name="address" class="materialize-textarea" required></textarea>
-                    <label for="customer-address">Dirección Fiscal</label>
+                <div class="row">
+                    <div class="input-field col s8">
+                        <input id="customer-street-address" type="text" name="street_address" required>
+                        <label for="customer-street-address">Calle y Número</label>
+                    </div>
+                    <div class="input-field col s4">
+                        <input id="customer-postal-code" type="text" name="postal_code" required pattern="[0-9]{5}" title="5 dígitos numéricos." maxlength="5">
+                        <label for="customer-postal-code">Código Postal</label>
+                    </div>
                 </div>
-                <div class="input-field">
-                    <input id="customer-postal-code" type="text" name="postal_code" required pattern="[0-9]{5,6}" title="5 a 6 dígitos numéricos.">
-                    <label for="customer-postal-code">Código Postal</label>
+                <div class="row">
+                    <div class="input-field col s12">
+                        <select id="customer-neighborhood" name="neighborhood" required>
+                            <option value="" disabled selected>Ingresa un C.P. para cargar colonias</option>
+                        </select>
+                        <label for="customer-neighborhood">Colonia</label>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="input-field col s6">
+                        <input id="customer-city" type="text" name="city" required readonly>
+                        <label for="customer-city">Ciudad / Municipio</label>
+                    </div>
+                    <div class="input-field col s6">
+                        <input id="customer-state" type="text" name="state" required readonly>
+                        <label for="customer-state">Estado</label>
+                    </div>
                 </div>
                 <div class="input-field">
                     <input id="customer-email" type="email" name="email" required pattern="[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}" title="Ingrese una dirección de correo válida.">

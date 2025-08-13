@@ -156,14 +156,61 @@ function initializeDataTable(tableSelector, pageTitle) {
  */
 function handleCustomersPage() {
     const apiUrl = `${API_BASE_URL}customers.php`;
+    const postalCodeApiUrl = 'https://codigos-postales-mx.herokuapp.com/api/codigos-postales/';
+
     const form = document.getElementById('form-customer');
     const modal = M.Modal.getInstance(document.getElementById('modal-customer'));
     const modalTitle = document.getElementById('modal-customer-title');
-    const customerIdField = document.getElementById('customer-id');
-    const tableBody = document.getElementById('customers-table-body'); // Still needed for click delegation
+    const tableBody = document.getElementById('customers-table-body');
 
-    // Initialize the DataTable once and get its instance
+    // Form fields
+    const customerIdField = document.getElementById('customer-id');
+    const postalCodeInput = document.getElementById('customer-postal-code');
+    const neighborhoodSelect = document.getElementById('customer-neighborhood');
+    const cityInput = document.getElementById('customer-city');
+    const stateInput = document.getElementById('customer-state');
+
     const customersTable = initializeDataTable('#customers-table', 'Lista de Clientes');
+
+    // --- Fetch Address Info from API ---
+    const fetchAddressInfo = async (postalCode) => {
+        if (postalCode.length !== 5) {
+            neighborhoodSelect.innerHTML = '<option value="" disabled selected>C.P. debe tener 5 dígitos</option>';
+            M.FormSelect.init(neighborhoodSelect);
+            return;
+        }
+
+        neighborhoodSelect.innerHTML = '<option value="" disabled selected>Buscando...</option>';
+        M.FormSelect.init(neighborhoodSelect);
+
+        try {
+            const response = await fetch(`${postalCodeApiUrl}${postalCode}`);
+            if (!response.ok) throw new Error('Network response was not ok.');
+
+            const data = await response.json();
+            if (data && data.length > 0) {
+                cityInput.value = data[0].municipio;
+                stateInput.value = data[0].estado;
+
+                neighborhoodSelect.innerHTML = '<option value="" disabled selected>Selecciona una colonia</option>';
+                data.forEach(item => {
+                    neighborhoodSelect.innerHTML += `<option value="${item.asentamiento}">${item.asentamiento}</option>`;
+                });
+                M.updateTextFields();
+            } else {
+                neighborhoodSelect.innerHTML = '<option value="" disabled selected>Sin resultados para este C.P.</option>';
+                cityInput.value = '';
+                stateInput.value = '';
+            }
+        } catch (error) {
+            console.error('Error fetching postal code info:', error);
+            neighborhoodSelect.innerHTML = '<option value="" disabled selected>Error al buscar</option>';
+        } finally {
+            M.FormSelect.init(neighborhoodSelect);
+        }
+    };
+
+    postalCodeInput.addEventListener('change', (e) => fetchAddressInfo(e.target.value));
 
     // --- Load Customers ---
     const loadCustomers = async () => {
@@ -172,21 +219,10 @@ function handleCustomersPage() {
             const result = await response.json();
             if (result.status === 'success') {
                 const tableData = result.data.map(customer => {
-                    // Important: The actions column needs the data-id attribute for the event listener.
-                    const actions = `
-                        <a href="#" class="btn-small waves-effect waves-light blue edit-btn" data-id="${customer.id}"><i class="material-icons">edit</i></a>
-                        <a href="#" class="btn-small waves-effect waves-light red delete-btn" data-id="${customer.id}"><i class="material-icons">delete</i></a>
-                    `;
-                    return [
-                        customer.name,
-                        customer.rfc,
-                        customer.email,
-                        customer.address,
-                        customer.postal_code,
-                        actions
-                    ];
+                    const actions = `<a href="#" class="btn-small waves-effect waves-light blue edit-btn" data-id="${customer.id}"><i class="material-icons">edit</i></a> <a href="#" class="btn-small waves-effect waves-light red delete-btn" data-id="${customer.id}"><i class="material-icons">delete</i></a>`;
+                    const fullAddress = `${customer.street_address}, ${customer.neighborhood}`;
+                    return [customer.name, customer.rfc, customer.email, fullAddress, customer.postal_code, actions];
                 });
-
                 customersTable.clear().rows.add(tableData).draw();
             } else {
                 M.toast({ html: `Error al cargar clientes: ${result.message}` });
@@ -253,15 +289,23 @@ function handleCustomersPage() {
                 if (result.status === 'success') {
                     const customer = result.data;
                     modalTitle.textContent = 'Editar Cliente';
+                    // Populate basic fields
                     customerIdField.value = customer.id;
                     form.elements['name'].value = customer.name;
                     form.elements['rfc'].value = customer.rfc;
-                    form.elements['address'].value = customer.address;
+                    form.elements['street_address'].value = customer.street_address;
                     form.elements['postal_code'].value = customer.postal_code;
+                    form.elements['city'].value = customer.city;
+                    form.elements['state'].value = customer.state;
                     form.elements['email'].value = customer.email;
                     form.elements['phone'].value = customer.phone;
-                    M.textareaAutoResize(form.elements['address']); // Recalculate textarea size
-                    M.updateTextFields(); // Important for Materialize labels
+
+                    // Fetch neighborhoods for the given postal code and then select the correct one
+                    await fetchAddressInfo(customer.postal_code);
+                    form.elements['neighborhood'].value = customer.neighborhood;
+
+                    M.FormSelect.init(neighborhoodSelect);
+                    M.updateTextFields();
                     modal.open();
                 }
             } catch (error) {
@@ -294,6 +338,9 @@ function handleCustomersPage() {
         modalTitle.textContent = 'Agregar Cliente';
         form.reset();
         customerIdField.value = '';
+        // Clear the neighborhood select
+        neighborhoodSelect.innerHTML = '<option value="" disabled selected>Ingresa un C.P. para cargar colonias</option>';
+        M.FormSelect.init(neighborhoodSelect);
     });
 
     // Initial load
