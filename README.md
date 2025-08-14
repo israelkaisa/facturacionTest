@@ -46,9 +46,14 @@ Sigue estos pasos para poner en marcha el proyecto en tu entorno local.
 
 ### 2. Poblar la Base de Datos (Catálogos y Admin)
 
-Para que el sistema funcione correctamente, necesitas poblar las tablas de catálogos del SAT y crear un usuario administrador por defecto.
+Para que el sistema funcione correctamente, necesitas poblar las tablas con datos iniciales y crear un usuario administrador por defecto.
 
-Ejecuta el siguiente comando desde la raíz del proyecto. Este script hará ambas cosas:
+El script de siembra (`seed.php`) se encarga de:
+- Poblar los catálogos del SAT (formas de pago, uso de CFDI, etc.).
+- Poblar la tabla de códigos postales de México para la funcionalidad de autocompletado de direcciones. La fuente de estos datos es `data/CPdescarga.txt`.
+- Crear un usuario administrador por defecto.
+
+Ejecuta el siguiente comando desde la raíz del proyecto para realizar todas estas acciones:
 
 ```sh
 php seed.php
@@ -68,6 +73,7 @@ Serás redirigido a la página de login. ¡Usa las credenciales del administrado
 
 -   `/api`: Endpoints de la API para la comunicación entre el frontend y el backend.
 -   `/assets`: Archivos CSS, JS e imágenes.
+-   `/data`: Contiene archivos de datos para la siembra, como el catálogo de códigos postales.
 -   `/src`: Código fuente de PHP.
     -   `/config`: Archivo de configuración.
     -   `/lib`: Clases base, como la de la base de datos.

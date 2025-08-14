@@ -4,7 +4,8 @@
 
 require_once 'src/config/config.php';
 require_once 'src/lib/Database.php';
-require_once 'seed_sat_units.php'; // Include the new seeder
+require_once 'seed_sat_units.php';
+require_once 'seed_postal_codes.php'; // Include the new postal code seeder
 
 // --- Data Definitions ---
 const SAT_USO_CFDI_DATA = [
@@ -57,7 +58,10 @@ try {
     // Seed the new SAT units table
     seed_sat_units($db->getDbh());
 
-    echo "\n¡Siembra de catálogos completada con éxito!\n";
+    echo "\n¡Siembra de catálogos del SAT completada con éxito!\n";
+
+    // Seed the postal codes table
+    seed_postal_codes($db->getDbh());
 
     // --- Create Admin User ---
     echo "\nIntentando crear usuario administrador...\n";
