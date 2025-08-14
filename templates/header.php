@@ -29,7 +29,7 @@
         <span class="ms-2">Facturación</span>
         <i class="cil-wallet sidebar-brand-narrow" width="46" height="46"></i>
     </div>
-    <ul class="sidebar-nav" data-coreui="navigation" data-simplebar="">
+    <ul class="sidebar-nav" data-coreui="navigation">
         <li class="nav-item">
             <a class="nav-link" href="index.php?page=dashboard">
                 <i class="nav-icon cil-speedometer"></i> Dashboard
