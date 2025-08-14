@@ -50,14 +50,14 @@ try {
                     break;
                 }
 
-                $documentId = $document_model->create($data);
+                $newDocument = $document_model->create($data);
 
-                if ($documentId) {
+                if ($newDocument) {
                     http_response_code(201);
                     $response = [
                         'status' => 'success',
                         'message' => 'Document created successfully.',
-                        'data' => ['id' => $documentId]
+                        'data' => $newDocument
                     ];
                 } else {
                     http_response_code(500);

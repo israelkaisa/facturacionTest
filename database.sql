@@ -27,7 +27,11 @@ CREATE TABLE `customers` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL COMMENT 'Razón Social',
   `rfc` varchar(13) NOT NULL,
-  `address` text NOT NULL COMMENT 'Dirección Fiscal',
+  `street_address` varchar(255) NOT NULL COMMENT 'Calle y Número',
+  `neighborhood` varchar(255) NOT NULL COMMENT 'Colonia o Asentamiento',
+  `postal_code` varchar(10) NOT NULL COMMENT 'Código Postal',
+  `city` varchar(100) NOT NULL COMMENT 'Ciudad o Municipio',
+  `state` varchar(100) NOT NULL COMMENT 'Estado',
   `email` varchar(255) NOT NULL,
   `phone` varchar(20) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
@@ -79,6 +83,7 @@ CREATE TABLE `documents` (
   `customer_id` int(11) NOT NULL,
   `type` enum('quote','order','invoice') NOT NULL,
   `folio` varchar(20) NOT NULL,
+  `source_folio` varchar(20) DEFAULT NULL,
   `status` enum('draft','sent','partial','paid','cancelled','completed') NOT NULL,
   `cfdi_use` varchar(5) DEFAULT NULL COMMENT 'Uso de CFDI (SAT)',
   `payment_method` varchar(5) DEFAULT NULL COMMENT 'Método de pago (PUE/PPD)',
@@ -93,6 +98,7 @@ CREATE TABLE `documents` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `folio` (`folio`),
   KEY `customer_id` (`customer_id`),
+  KEY `source_folio_idx` (`source_folio`),
   CONSTRAINT `documents_ibfk_1` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 

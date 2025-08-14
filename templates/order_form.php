@@ -3,6 +3,7 @@
     <div class="card">
         <div class="card-content">
             <form id="form-order">
+                <input type="hidden" id="order-source-folio" name="source_folio">
                 <!-- Document Header -->
                 <div class="row">
                     <div class="input-field col s12 m6">

@@ -3,6 +3,7 @@
     <div class="card">
         <div class="card-content">
             <form id="form-invoice">
+                <input type="hidden" id="invoice-source-folio" name="source_folio">
                 <!-- Document Header -->
                 <div class="row">
                     <div class="input-field col s12 m6">
@@ -23,20 +24,16 @@
                 </div>
                 <div class="row">
                     <div class="input-field col s12 m6">
+                        <input type="text" id="cfdi-use-search" placeholder="Buscar Uso de CFDI...">
                         <select id="invoice-cfdi-use" name="cfdi_use" required>
-                             <!-- Options from config.php will be populated by JS -->
+                             <!-- Options will be populated by JS -->
                         </select>
                         <label>Uso de CFDI</label>
                     </div>
-                    <div class="input-field col s12 m4">
-                        <select id="invoice-payment-method" name="payment_method" required>
-                           <!-- Options from config.php will be populated by JS -->
-                        </select>
-                        <label>Método de Pago (PUE/PPD)</label>
-                    </div>
-                     <div class="input-field col s12 m4">
+                    <div class="input-field col s12 m6">
+                        <input type="text" id="payment-form-search" placeholder="Buscar Forma de Pago...">
                         <select id="invoice-payment-form" name="payment_form" required>
-                           <!-- Options from config.php will be populated by JS -->
+                           <!-- Options will be populated by JS -->
                         </select>
                         <label>Forma de Pago</label>
                     </div>

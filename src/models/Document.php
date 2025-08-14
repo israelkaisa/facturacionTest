@@ -61,20 +61,21 @@ class Document {
      */
     public function create($data) {
         try {
-            $this->db->dbh->beginTransaction();
+            $this->db->getDbh()->beginTransaction();
 
             // 1. Insert into documents table
             $this->db->query("
-                INSERT INTO documents (customer_id, type, folio, status, cfdi_use, payment_method, payment_form, subtotal, tax, total, due_date)
-                VALUES (:customer_id, :type, :folio, :status, :cfdi_use, :payment_method, :payment_form, :subtotal, :tax, :total, :due_date)
+            INSERT INTO documents (customer_id, type, folio, source_folio, status, cfdi_use, payment_method, payment_form, subtotal, tax, total, due_date)
+            VALUES (:customer_id, :type, :folio, :source_folio, :status, :cfdi_use, :payment_method, :payment_form, :subtotal, :tax, :total, :due_date)
             ");
 
-            // Generate a simple folio for now
-            $folio = strtoupper(substr($data['type'], 0, 1)) . '-' . time();
+        // Generate a new random folio
+        $folio = $this->_generate_folio();
 
             $this->db->bind(':customer_id', $data['customer_id']);
             $this->db->bind(':type', $data['type']);
             $this->db->bind(':folio', $folio);
+        $this->db->bind(':source_folio', $data['source_folio'] ?? null);
             $this->db->bind(':status', 'draft'); // Start as draft
             $this->db->bind(':cfdi_use', $data['cfdi_use'] ?? null);
             $this->db->bind(':payment_method', $data['payment_method'] ?? null);
@@ -103,11 +104,11 @@ class Document {
                 $this->db->execute();
             }
 
-            $this->db->dbh->commit();
-            return $documentId;
+            $this->db->getDbh()->commit();
+            return ['id' => $documentId, 'folio' => $folio];
 
         } catch (Exception $e) {
-            $this->db->dbh->rollBack();
+            $this->db->getDbh()->rollBack();
             // In a real app, log the error
             error_log('Document creation failed: ' . $e->getMessage());
             return false;
@@ -162,6 +163,17 @@ class Document {
         }
 
         return true; // No update was needed, but operation is successful
+    }
+
+    /**
+     * Generates a random folio string (3 letters, 10 numbers).
+     * @return string The generated folio.
+     */
+    private function _generate_folio() {
+        $letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $random_letters = substr(str_shuffle(str_repeat($letters, 3)), 0, 3);
+        $random_numbers = str_pad(mt_rand(0, 9999999999), 10, '0', STR_PAD_LEFT);
+        return $random_letters . $random_numbers;
     }
 }
 ?>

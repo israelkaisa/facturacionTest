@@ -30,11 +30,11 @@
                 <input type="hidden" id="product-id" name="id">
                 <div class="row">
                     <div class="input-field col s6">
-                        <input id="product-sku" type="text" name="sku" required>
+                        <input id="product-sku" type="text" name="sku" required maxlength="10">
                         <label for="product-sku">SKU (Código Interno)</label>
                     </div>
                     <div class="input-field col s6">
-                        <input id="product-sat-key" type="text" name="sat_product_key" required>
+                        <input id="product-sat-key" type="text" name="sat_product_key" required pattern="[0-9]{1,8}" title="Hasta 8 dígitos numéricos.">
                         <label for="product-sat-key">Clave de Producto/Servicio (SAT)</label>
                     </div>
                 </div>
@@ -44,6 +44,7 @@
                 </div>
                 <div class="row">
                     <div class="input-field col s6">
+                        <input type="text" id="unit-key-search" placeholder="Buscar unidad...">
                         <select id="product-sat-unit-key" name="sat_unit_key" required>
                             <option value="" disabled selected>Cargando...</option>
                         </select>

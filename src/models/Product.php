@@ -27,6 +27,15 @@ class Product {
     }
 
     /**
+     * Get product by SKU
+     */
+    public function findBySku($sku) {
+        $this->db->query("SELECT * FROM products WHERE UPPER(sku) = UPPER(:sku)");
+        $this->db->bind(':sku', $sku);
+        return $this->db->single();
+    }
+
+    /**
      * Create a new product
      * @param array $data Associative array with product data
      */

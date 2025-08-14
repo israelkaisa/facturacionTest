@@ -23,7 +23,7 @@
 
 <!-- DataTables JS -->
 <script src="assets/datatables/dataTables.min.js"></script>
-<script src="assets/datatables/dataTables.buttons.min.js"></script>
+<script src="assets/datatables/buttons.min.js"></script>
 <script src="assets/datatables/jszip.min.js"></script>
 <script src="assets/datatables/pdfmake.min.js"></script>
 <script src="assets/datatables/vfs_fonts.js"></script>

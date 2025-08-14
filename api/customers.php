@@ -39,12 +39,32 @@ try {
 
         case 'POST':
             $data = json_decode(file_get_contents('php://input'), true);
-            if ($customer_model->create($data)) {
-                http_response_code(201);
-                $response = ['status' => 'success', 'message' => 'Customer created successfully.'];
+
+            // --- Input Validation ---
+            $required_fields = ['name', 'rfc', 'street_address', 'neighborhood', 'postal_code', 'city', 'state', 'email'];
+            foreach ($required_fields as $field) {
+                if (empty($data[$field])) {
+                    http_response_code(400); // Bad Request
+                    $response = ['status' => 'error', 'message' => "El campo '$field' es obligatorio."];
+                    echo json_encode($response);
+                    exit();
+                }
+            }
+
+            if ($customer_model->findByRfc($data['rfc'])) {
+                http_response_code(409); // Conflict
+                $response = ['status' => 'error', 'message' => 'El RFC ya existe. Por favor, use uno diferente.'];
+            } elseif ($customer_model->findByEmail($data['email'])) {
+                http_response_code(409); // Conflict
+                $response = ['status' => 'error', 'message' => 'El correo electrónico ya está registrado.'];
             } else {
-                http_response_code(400);
-                $response = ['status' => 'error', 'message' => 'Failed to create customer.'];
+                if ($customer_model->create($data)) {
+                    http_response_code(201);
+                    $response = ['status' => 'success', 'message' => 'Cliente creado con éxito.'];
+                } else {
+                    http_response_code(500);
+                    $response = ['status' => 'error', 'message' => 'Error en el servidor al crear el cliente.'];
+                }
             }
             break;
 
@@ -52,11 +72,36 @@ try {
             if (isset($_GET['id'])) {
                 $id = intval($_GET['id']);
                 $data = json_decode(file_get_contents('php://input'), true);
-                if ($customer_model->update($id, $data)) {
-                    $response = ['status' => 'success', 'message' => 'Customer updated successfully.'];
+
+                // --- Input Validation ---
+                $required_fields = ['name', 'rfc', 'street_address', 'neighborhood', 'postal_code', 'city', 'state', 'email'];
+                foreach ($required_fields as $field) {
+                    if (empty($data[$field])) {
+                        http_response_code(400); // Bad Request
+                        $response = ['status' => 'error', 'message' => "El campo '$field' es obligatorio."];
+                        echo json_encode($response);
+                        exit();
+                    }
+                }
+
+                $existing_by_rfc = $customer_model->findByRfc($data['rfc']);
+                if ($existing_by_rfc && $existing_by_rfc['id'] != $id) {
+                    http_response_code(409); // Conflict
+                    $response = ['status' => 'error', 'message' => 'El RFC ya pertenece a otro cliente.'];
+                    break;
+                }
+
+                $existing_by_email = $customer_model->findByEmail($data['email']);
+                if ($existing_by_email && $existing_by_email['id'] != $id) {
+                    http_response_code(409); // Conflict
+                    $response = ['status' => 'error', 'message' => 'El correo electrónico ya pertenece a otro cliente.'];
                 } else {
-                    http_response_code(400);
-                    $response = ['status' => 'error', 'message' => 'Failed to update customer.'];
+                    if ($customer_model->update($id, $data)) {
+                        $response = ['status' => 'success', 'message' => 'Cliente actualizado con éxito.'];
+                    } else {
+                        http_response_code(500);
+                        $response = ['status' => 'error', 'message' => 'Error en el servidor al actualizar el cliente.'];
+                    }
                 }
             } else {
                 http_response_code(400);

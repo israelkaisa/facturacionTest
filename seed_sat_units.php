@@ -26,7 +26,7 @@ function seed_sat_units(PDO $pdo) {
         ['key' => 'MLT', 'value' => 'Mililitro']
     ];
 
-    $stmt = $pdo->prepare("INSERT INTO sat_units (`key`, `value`) VALUES (:key, :value) ON DUPLICATE KEY UPDATE `value` = :value");
+    $stmt = $pdo->prepare("INSERT INTO sat_units (`key`, `value`) VALUES (:key, :value) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)");
 
     echo "Seeding SAT Units...\n";
     $count = 0;

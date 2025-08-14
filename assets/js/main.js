@@ -1,11 +1,11 @@
+const API_BASE_URL = 'api/';
+
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize all Materialize components
     M.AutoInit();
     // Initialize dropdowns specifically
     var dropdowns = document.querySelectorAll('.dropdown-trigger');
     M.Dropdown.init(dropdowns);
-
-    const API_BASE_URL = 'api/';
 
     // Check which page is currently active
     if (document.getElementById('customers-page')) {
@@ -16,6 +16,27 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     if (document.getElementById('sat-catalog-page')) {
         handleSatCatalogPage();
+    }
+    if (document.getElementById('invoices-page')) {
+        handleInvoicesPage();
+    }
+    if (document.getElementById('invoice-form-page')) {
+        handleInvoiceFormPage();
+    }
+    if (document.getElementById('quotes-page')) {
+        handleQuotesPage();
+    }
+    if (document.getElementById('quote-form-page')) {
+        handleQuoteFormPage();
+    }
+    if (document.getElementById('orders-page')) {
+        handleOrdersPage();
+    }
+    if (document.getElementById('order-form-page')) {
+        handleOrderFormPage();
+    }
+    if (document.getElementById('document-view-page')) {
+        handleDocumentViewPage();
     }
 });
 
@@ -84,18 +105,30 @@ function handleSatCatalogPage() {
  * @param {string} tableSelector - The CSS selector for the table (e.g., '#customers-table').
  * @param {string} pageTitle - The title to use for PDF/Excel exports.
  */
-function initializeDataTable(tableSelector, pageTitle) {
-    console.log(`Initializing DataTable for: ${tableSelector}`);
-    const table = $(tableSelector);
+function filterSelect(searchInput, selectElement, originalOptions) {
+    const searchText = searchInput.value.toLowerCase();
+    const filteredOptions = originalOptions.filter(option =>
+        option.text.toLowerCase().includes(searchText) || option.value.toLowerCase().includes(searchText)
+    );
 
-    // Destroy any existing DataTable instance to prevent reinitialization errors
+    selectElement.innerHTML = '';
+    filteredOptions.forEach(option => {
+        // We need to clone the option to avoid issues with it being moved from the original array
+        selectElement.add(option.cloneNode(true));
+    });
+
+    M.FormSelect.init(selectElement);
+}
+
+function initializeDataTable(tableSelector, pageTitle) {
+    // If the table has already been initialized, return the instance
     if ($.fn.DataTable.isDataTable(tableSelector)) {
-        table.DataTable().destroy();
+        return $(tableSelector).DataTable();
     }
 
-    // A more standard and robust initialization
-    table.DataTable({
-        dom: '<"top"lfB>rt<"bottom"ip><"clear">', // l-length, f-filtering, B-buttons, r-processing, t-table, i-info, p-pagination
+    // Otherwise, initialize it and return the new instance
+    return $(tableSelector).DataTable({
+        dom: '<"dt-header"Bf>rt<"dt-footer"ip>',
         buttons: [
             {
                 extend: 'excelHtml5',
@@ -123,11 +156,61 @@ function initializeDataTable(tableSelector, pageTitle) {
  */
 function handleCustomersPage() {
     const apiUrl = `${API_BASE_URL}customers.php`;
-    const tableBody = document.getElementById('customers-table-body');
+    const postalCodeApiUrl = `${API_BASE_URL}postal_code_proxy.php`; // Use the local proxy
+
     const form = document.getElementById('form-customer');
     const modal = M.Modal.getInstance(document.getElementById('modal-customer'));
     const modalTitle = document.getElementById('modal-customer-title');
+    const tableBody = document.getElementById('customers-table-body');
+
+    // Form fields
     const customerIdField = document.getElementById('customer-id');
+    const postalCodeInput = document.getElementById('customer-postal-code');
+    const neighborhoodSelect = document.getElementById('customer-neighborhood');
+    const cityInput = document.getElementById('customer-city');
+    const stateInput = document.getElementById('customer-state');
+
+    const customersTable = initializeDataTable('#customers-table', 'Lista de Clientes');
+
+    // --- Fetch Address Info from API ---
+    const fetchAddressInfo = async (postalCode) => {
+        if (postalCode.length !== 5) {
+            neighborhoodSelect.innerHTML = '<option value="" disabled selected>C.P. debe tener 5 dígitos</option>';
+            M.FormSelect.init(neighborhoodSelect);
+            return;
+        }
+
+        neighborhoodSelect.innerHTML = '<option value="" disabled selected>Buscando...</option>';
+        M.FormSelect.init(neighborhoodSelect);
+
+        try {
+            const response = await fetch(`${postalCodeApiUrl}?cp=${postalCode}`);
+            const result = await response.json();
+
+            if (result.status === 'success' && result.data && result.data.length > 0) {
+                const data = result.data;
+                cityInput.value = data[0].municipio;
+                stateInput.value = data[0].estado;
+
+                neighborhoodSelect.innerHTML = '<option value="" disabled selected>Selecciona una colonia</option>';
+                data.forEach(item => {
+                    neighborhoodSelect.innerHTML += `<option value="${item.asentamiento}">${item.asentamiento}</option>`;
+                });
+                M.updateTextFields();
+            } else {
+                neighborhoodSelect.innerHTML = '<option value="" disabled selected>Sin resultados para este C.P.</option>';
+                cityInput.value = '';
+                stateInput.value = '';
+            }
+        } catch (error) {
+            console.error('Error fetching postal code info:', error);
+            neighborhoodSelect.innerHTML = '<option value="" disabled selected>Error al buscar</option>';
+        } finally {
+            M.FormSelect.init(neighborhoodSelect);
+        }
+    };
+
+    postalCodeInput.addEventListener('change', (e) => fetchAddressInfo(e.target.value));
 
     // --- Load Customers ---
     const loadCustomers = async () => {
@@ -135,30 +218,31 @@ function handleCustomersPage() {
             const response = await fetch(apiUrl);
             const result = await response.json();
             if (result.status === 'success') {
-                tableBody.innerHTML = result.data.map(customer => `
-                    <tr>
-                        <td>${customer.name}</td>
-                        <td>${customer.rfc}</td>
-                        <td>${customer.email}</td>
-                        <td>${customer.phone}</td>
-                        <td>
-                            <a href="#" class="btn-small waves-effect waves-light blue edit-btn" data-id="${customer.id}"><i class="material-icons">edit</i></a>
-                            <a href="#" class="btn-small waves-effect waves-light red delete-btn" data-id="${customer.id}"><i class="material-icons">delete</i></a>
-                        </td>
-                    </tr>
-                `).join('');
-                // Initialize DataTable
-                initializeDataTable('#customers-table', 'Lista de Clientes');
+                const tableData = result.data.map(customer => {
+                    const actions = `<a href="#" class="btn-small waves-effect waves-light blue edit-btn" data-id="${customer.id}"><i class="material-icons">edit</i></a> <a href="#" class="btn-small waves-effect waves-light red delete-btn" data-id="${customer.id}"><i class="material-icons">delete</i></a>`;
+                    const fullAddress = `${customer.street_address}, ${customer.neighborhood}`;
+                    return [customer.name, customer.rfc, customer.email, fullAddress, customer.postal_code, actions];
+                });
+                customersTable.clear().rows.add(tableData).draw();
+            } else {
+                M.toast({ html: `Error al cargar clientes: ${result.message}` });
             }
         } catch (error) {
             console.error('Error loading customers:', error);
-            M.toast({ html: 'Error al cargar clientes' });
+            M.toast({ html: 'Error de red al cargar clientes' });
         }
     };
 
     // --- Form Submission (Create/Update) ---
+    const submitButton = document.querySelector('#modal-customer button[type="submit"]');
+    let isSubmitting = false;
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
+        if (isSubmitting) return;
+
+        isSubmitting = true;
+        submitButton.disabled = true;
+
         const formData = new FormData(form);
         const data = Object.fromEntries(formData.entries());
         const id = data.id;
@@ -183,6 +267,9 @@ function handleCustomersPage() {
         } catch (error) {
             console.error('Error saving customer:', error);
             M.toast({ html: 'Error al guardar cliente' });
+        } finally {
+            isSubmitting = false;
+            submitButton.disabled = false;
         }
     });
 
@@ -202,13 +289,23 @@ function handleCustomersPage() {
                 if (result.status === 'success') {
                     const customer = result.data;
                     modalTitle.textContent = 'Editar Cliente';
+                    // Populate basic fields
                     customerIdField.value = customer.id;
                     form.elements['name'].value = customer.name;
                     form.elements['rfc'].value = customer.rfc;
-                    form.elements['address'].value = customer.address;
+                    form.elements['street_address'].value = customer.street_address;
+                    form.elements['postal_code'].value = customer.postal_code;
+                    form.elements['city'].value = customer.city;
+                    form.elements['state'].value = customer.state;
                     form.elements['email'].value = customer.email;
                     form.elements['phone'].value = customer.phone;
-                    M.updateTextFields(); // Important for Materialize labels
+
+                    // Fetch neighborhoods for the given postal code and then select the correct one
+                    await fetchAddressInfo(customer.postal_code);
+                    form.elements['neighborhood'].value = customer.neighborhood;
+
+                    M.FormSelect.init(neighborhoodSelect);
+                    M.updateTextFields();
                     modal.open();
                 }
             } catch (error) {
@@ -241,6 +338,9 @@ function handleCustomersPage() {
         modalTitle.textContent = 'Agregar Cliente';
         form.reset();
         customerIdField.value = '';
+        // Clear the neighborhood select
+        neighborhoodSelect.innerHTML = '<option value="" disabled selected>Ingresa un C.P. para cargar colonias</option>';
+        M.FormSelect.init(neighborhoodSelect);
     });
 
     // Initial load
@@ -253,26 +353,49 @@ function handleCustomersPage() {
 function handleProductsPage() {
     const apiUrl = `${API_BASE_URL}products.php`;
     const satApiUrl = `${API_BASE_URL}sat_catalogs.php`;
-    const tableBody = document.getElementById('products-table-body');
     const form = document.getElementById('form-product');
     const modal = M.Modal.getInstance(document.getElementById('modal-product'));
     const modalTitle = document.getElementById('modal-product-title');
     const productIdField = document.getElementById('product-id');
     const unitSelect = document.getElementById('product-sat-unit-key');
+    const tableBody = document.getElementById('products-table-body');
 
     let satCatalogs = {};
+    const productsTable = initializeDataTable('#products-table', 'Lista de Productos');
+    let originalUnitOptions = [];
 
     // --- Populate SAT Unit Select ---
     const populateSatUnitSelect = () => {
         if (satCatalogs.units) {
-            unitSelect.innerHTML = '<option value="" disabled selected>Seleccione una unidad</option>';
+            let optionsHtml = '<option value="" disabled selected>Seleccione una unidad</option>';
             for (const [key, value] of Object.entries(satCatalogs.units)) {
-                unitSelect.innerHTML += `<option value="${key}">${key} - ${value}</option>`;
+                optionsHtml += `<option value="${key}">${key} - ${value}</option>`;
             }
+            unitSelect.innerHTML = optionsHtml;
+            originalUnitOptions = Array.from(unitSelect.options); // Store original options
         }
-        // Re-initialize the select with Materialize
         M.FormSelect.init(unitSelect);
     };
+
+    // --- Search/Filter Logic for Unit Select ---
+    const unitSearchInput = document.getElementById('unit-key-search');
+    unitSearchInput.addEventListener('input', (e) => {
+        const searchText = e.target.value.toLowerCase();
+
+        // Filter the original options
+        const filteredOptions = originalUnitOptions.filter(option =>
+            option.text.toLowerCase().includes(searchText) || option.value.toLowerCase().includes(searchText)
+        );
+
+        // Repopulate the select with filtered options
+        unitSelect.innerHTML = '';
+        filteredOptions.forEach(option => {
+            unitSelect.add(option);
+        });
+
+        // Re-initialize the select to show the new options
+        M.FormSelect.init(unitSelect);
+    });
 
     // --- Load Products ---
     const loadProducts = async () => {
@@ -280,24 +403,28 @@ function handleProductsPage() {
             const response = await fetch(apiUrl);
             const result = await response.json();
             if (result.status === 'success') {
-                tableBody.innerHTML = result.data.map(product => `
-                    <tr>
-                        <td>${product.sku}</td>
-                        <td>${product.sat_product_key}</td>
-                        <td>${product.name}</td>
-                        <td>${product.sat_unit_key} - ${satCatalogs.units[product.sat_unit_key] || 'N/A'}</td>
-                        <td>$${parseFloat(product.price).toFixed(2)}</td>
-                        <td>
-                            <a href="#" class="btn-small waves-effect waves-light blue edit-btn" data-id="${product.id}"><i class="material-icons">edit</i></a>
-                            <a href="#" class="btn-small waves-effect waves-light red delete-btn" data-id="${product.id}"><i class="material-icons">delete</i></a>
-                        </td>
-                    </tr>
-                `).join('');
-                initializeDataTable('#products-table', 'Lista de Productos');
+                const tableData = result.data.map(product => {
+                    const unitName = (satCatalogs && satCatalogs.units) ? (satCatalogs.units[product.sat_unit_key] || 'N/A') : 'N/A';
+                    const actions = `
+                        <a href="#" class="btn-small waves-effect waves-light blue edit-btn" data-id="${product.id}"><i class="material-icons">edit</i></a>
+                        <a href="#" class="btn-small waves-effect waves-light red delete-btn" data-id="${product.id}"><i class="material-icons">delete</i></a>
+                    `;
+                    return [
+                        product.sku,
+                        product.sat_product_key,
+                        product.name,
+                        `${product.sat_unit_key} - ${unitName}`,
+                        `$${parseFloat(product.price).toFixed(2)}`,
+                        actions
+                    ];
+                });
+                productsTable.clear().rows.add(tableData).draw();
+            } else {
+                M.toast({ html: `Error al cargar productos: ${result.message}` });
             }
         } catch (error) {
             console.error('Error loading products:', error);
-            M.toast({ html: 'Error al cargar productos' });
+            M.toast({ html: 'Error de red al cargar productos' });
         }
     };
 
@@ -321,8 +448,15 @@ function handleProductsPage() {
     };
 
     // --- Form Submission (Create/Update) ---
+    const submitButton = document.querySelector('#modal-product button[type="submit"]');
+    let isSubmitting = false;
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
+        if (isSubmitting) return;
+
+        isSubmitting = true;
+        submitButton.disabled = true;
+
         const formData = new FormData(form);
         const data = Object.fromEntries(formData.entries());
         const id = data.id;
@@ -347,6 +481,9 @@ function handleProductsPage() {
         } catch (error) {
             console.error('Error saving product:', error);
             M.toast({ html: 'Error al guardar producto' });
+        } finally {
+            isSubmitting = false;
+            submitButton.disabled = false;
         }
     });
 
@@ -475,9 +612,12 @@ async function handleInvoiceFormPage() {
     // --- Pre-population from reference document ---
     const populateFormFromReference = () => {
         const referenceDoc = JSON.parse(sessionStorage.getItem('referenceDocument'));
+        console.log('Reference Document:', referenceDoc); // Debugging line
         if (referenceDoc) {
             // Set customer
             customerSelect.value = referenceDoc.customer_id;
+            // Set the source folio in the hidden input
+            document.getElementById('invoice-source-folio').value = referenceDoc.folio;
 
             // Clear existing empty item rows before adding new ones
             itemsContainer.innerHTML = '';
@@ -522,19 +662,33 @@ async function handleInvoiceFormPage() {
 
             // Populate SAT catalogs
             if (satResult.status === 'success') {
+                let cfdiOptions = '';
                 for (const [key, value] of Object.entries(satResult.data.cfdi_uses)) {
-                    cfdiUseSelect.innerHTML += `<option value="${key}">${key} - ${value}</option>`;
+                    cfdiOptions += `<option value="${key}">${key} - ${value}</option>`;
                 }
-                for (const [key, value] of Object.entries(satResult.data.payment_methods)) {
-                    paymentMethodSelect.innerHTML += `<option value="${key}">${key} - ${value}</option>`;
+                cfdiUseSelect.innerHTML = cfdiOptions;
+
+                let paymentFormOptions = '';
+                for (const [key, value] of Object.entries(satResult.data.payment_forms)) {
+                    paymentFormOptions += `<option value="${key}">${key} - ${value}</option>`;
                 }
-                 for (const [key, value] of Object.entries(satResult.data.payment_forms)) {
-                    paymentFormSelect.innerHTML += `<option value="${key}">${key} - ${value}</option>`;
-                }
+                paymentFormSelect.innerHTML = paymentFormOptions;
             }
 
             // Re-initialize Materialize selects
             M.FormSelect.init(document.querySelectorAll('select'));
+
+            // Store original options for filtering
+            const originalCfdiOptions = Array.from(cfdiUseSelect.options);
+            const originalPaymentFormOptions = Array.from(paymentFormSelect.options);
+
+            // Add search listeners
+            document.getElementById('cfdi-use-search').addEventListener('input', (e) => {
+                filterSelect(e.target, cfdiUseSelect, originalCfdiOptions);
+            });
+            document.getElementById('payment-form-search').addEventListener('input', (e) => {
+                filterSelect(e.target, paymentFormSelect, originalPaymentFormOptions);
+            });
 
         } catch (error) {
             console.error('Error fetching initial data:', error);
@@ -563,7 +717,9 @@ async function handleInvoiceFormPage() {
         // Manually trigger price update for populated row
         if(itemToPopulate){
              const price = productSelect.options[productSelect.selectedIndex].dataset.price || 0;
-             itemsContainer.lastChild.querySelector('.price').value = parseFloat(price).toFixed(2);
+             if (itemsContainer.lastElementChild) {
+                itemsContainer.lastElementChild.querySelector('.price').value = parseFloat(price).toFixed(2);
+             }
         }
     };
 
@@ -625,6 +781,14 @@ async function handleInvoiceFormPage() {
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
+        // --- Date Validation ---
+        const emissionDate = new Date(form.elements['date'].value);
+        const dueDate = new Date(form.elements['due_date'].value);
+        if (dueDate < emissionDate) {
+            M.toast({ html: 'La fecha de vencimiento no puede ser anterior a la fecha de emisión.' });
+            return;
+        }
+
         const subtotal = parseFloat(document.getElementById('invoice-subtotal').textContent.replace('$', ''));
         const tax = parseFloat(document.getElementById('invoice-tax').textContent.replace('$', ''));
         const total = parseFloat(document.getElementById('invoice-total').textContent.replace('$', ''));
@@ -652,9 +816,8 @@ async function handleInvoiceFormPage() {
             customer_id: formData.get('customer_id'),
             type: 'invoice', // Hardcoded for now
             cfdi_use: formData.get('cfdi_use'),
-            payment_method: formData.get('payment_method'),
             payment_form: formData.get('payment_form'),
-            due_date: formData.get('due_date'),
+            due_date: new Date(formData.get('due_date')).toISOString().slice(0, 10), // Format to YYYY-MM-DD
             subtotal: subtotal,
             tax: tax,
             total: total,
@@ -669,7 +832,7 @@ async function handleInvoiceFormPage() {
             });
             const result = await response.json();
             if (result.status === 'success') {
-                M.toast({ html: 'Factura creada con éxito!' });
+                M.toast({ html: `Factura creada con éxito! Folio: ${result.data.folio}` });
                 // Redirect to the invoices list
                 window.location.href = 'index.php?page=invoices';
             } else {
@@ -697,42 +860,6 @@ async function handleInvoiceFormPage() {
         autoClose: true
     });
 }
-
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize all Materialize components
-    M.AutoInit();
-
-    const API_BASE_URL = 'api/';
-
-    // Check which page is currently active
-    if (document.getElementById('customers-page')) {
-        handleCustomersPage();
-    }
-    if (document.getElementById('products-page')) {
-        handleProductsPage();
-    }
-    if (document.getElementById('invoices-page')) {
-        handleInvoicesPage();
-    }
-    if (document.getElementById('invoice-form-page')) {
-        handleInvoiceFormPage();
-    }
-    if (document.getElementById('document-view-page')) {
-        handleDocumentViewPage();
-    }
-    if (document.getElementById('quotes-page')) {
-        handleQuotesPage();
-    }
-    if (document.getElementById('quote-form-page')) {
-        handleQuoteFormPage();
-    }
-    if (document.getElementById('orders-page')) {
-        handleOrdersPage();
-    }
-    if (document.getElementById('order-form-page')) {
-        handleOrderFormPage();
-    }
-});
 
 /**
  * Handles logic for the Quotes List page
@@ -865,6 +992,16 @@ async function handleQuoteFormPage() {
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
+
+        // --- Date Validation ---
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Normalize today's date
+        const dueDate = new Date(form.elements['due_date'].value);
+        if (dueDate < today) {
+            M.toast({ html: 'La fecha de vencimiento no puede ser anterior a hoy.' });
+            return;
+        }
+
         const subtotal = parseFloat(document.getElementById('quote-subtotal').textContent.replace('$', ''));
         const tax = parseFloat(document.getElementById('quote-tax').textContent.replace('$', ''));
         const total = parseFloat(document.getElementById('quote-total').textContent.replace('$', ''));
@@ -882,7 +1019,8 @@ async function handleQuoteFormPage() {
         const data = {
             customer_id: formData.get('customer_id'),
             type: 'quote',
-            due_date: formData.get('due_date'),
+            status: 'pending', // Add status for new quotes
+            due_date: new Date(formData.get('due_date')).toISOString().slice(0, 10), // Format to YYYY-MM-DD
             subtotal, tax, total, items
         };
         const response = await fetch(`${API_BASE_URL}documents.php`, {
@@ -892,7 +1030,7 @@ async function handleQuoteFormPage() {
         });
         const result = await response.json();
         if (result.status === 'success') {
-            M.toast({ html: 'Cotización creada con éxito!' });
+            M.toast({ html: `Cotización creada con éxito! Folio: ${result.data.folio}` });
             window.location.href = 'index.php?page=quotes';
         } else {
             M.toast({ html: `Error: ${result.message}` });
@@ -905,6 +1043,7 @@ async function handleQuoteFormPage() {
         addItemRow();
     }
     M.Datepicker.init(document.querySelectorAll('.datepicker'), { format: 'yyyy-mm-dd', autoClose: true });
+
 }
 
 /**
@@ -957,12 +1096,20 @@ async function handleOrderFormPage() {
         const referenceDoc = JSON.parse(sessionStorage.getItem('referenceDocument'));
         if (referenceDoc) {
             customerSelect.value = referenceDoc.customer_id;
+            // Set the source folio in the hidden input
+            const sourceFolioInput = document.getElementById('order-source-folio');
+            if(sourceFolioInput) {
+                sourceFolioInput.value = referenceDoc.folio;
+            }
+
             itemsContainer.innerHTML = '';
             referenceDoc.items.forEach(item => addItemRow(item));
             M.FormSelect.init(document.querySelectorAll('select'));
             updateTotals();
             sessionStorage.removeItem('referenceDocument');
+            return true; // Indicate that form was populated
         }
+        return false; // Indicate no reference doc was found
     };
 
     const fetchData = async () => {
@@ -983,14 +1130,28 @@ async function handleOrderFormPage() {
         M.FormSelect.init(document.querySelectorAll('select'));
     };
 
-    const addItemRow = () => {
+    const addItemRow = (itemToPopulate = null) => {
         const templateContent = itemTemplate.content.cloneNode(true);
         const productSelect = templateContent.querySelector('.product-select');
+        const quantityInput = templateContent.querySelector('.quantity');
+
         products.forEach(p => {
-            productSelect.innerHTML += `<option value="${p.id}" data-price="${p.price}" data-tax-rate="${p.tax_rate}">${p.name}</option>`;
+            const isSelected = itemToPopulate && p.id == itemToPopulate.product_id;
+            productSelect.innerHTML += `<option value="${p.id}" data-price="${p.price}" data-tax-rate="${p.tax_rate}" ${isSelected ? 'selected' : ''}>${p.name}</option>`;
         });
+
+        if(itemToPopulate){
+            quantityInput.value = itemToPopulate.quantity;
+        }
+
         itemsContainer.appendChild(templateContent);
         M.FormSelect.init(itemsContainer.querySelectorAll('select:last-of-type'));
+
+        if(itemToPopulate){
+             const price = productSelect.options[productSelect.selectedIndex].dataset.price || 0;
+             const priceInput = itemsContainer.querySelector('.item-row:last-child .price');
+             if(priceInput) priceInput.value = parseFloat(price).toFixed(2);
+        }
     };
 
     const updateTotals = () => {
@@ -1013,7 +1174,7 @@ async function handleOrderFormPage() {
         document.getElementById('order-total').textContent = `$${(subtotal + tax).toFixed(2)}`;
     };
 
-    addItemBtn.addEventListener('click', addItemRow);
+    addItemBtn.addEventListener('click', () => addItemRow());
     itemsContainer.addEventListener('click', e => {
         if (e.target.closest('.remove-item-btn')) {
             e.target.closest('.item-row').remove();
@@ -1036,6 +1197,15 @@ async function handleOrderFormPage() {
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
+
+        // --- Date Validation ---
+        const emissionDate = new Date(form.elements['date'].value);
+        const dueDate = new Date(form.elements['due_date'].value);
+        if (dueDate < emissionDate) {
+            M.toast({ html: 'La fecha de entrega no puede ser anterior a la fecha de emisión.' });
+            return;
+        }
+
         const subtotal = parseFloat(document.getElementById('order-subtotal').textContent.replace('$', ''));
         const tax = parseFloat(document.getElementById('order-tax').textContent.replace('$', ''));
         const total = parseFloat(document.getElementById('order-total').textContent.replace('$', ''));
@@ -1053,7 +1223,8 @@ async function handleOrderFormPage() {
         const data = {
             customer_id: formData.get('customer_id'),
             type: 'order',
-            due_date: formData.get('due_date'),
+            source_folio: formData.get('source_folio'),
+            due_date: new Date(formData.get('due_date')).toISOString().slice(0, 10), // Format to YYYY-MM-DD
             subtotal, tax, total, items
         };
         const response = await fetch(`${API_BASE_URL}documents.php`, {
@@ -1063,7 +1234,7 @@ async function handleOrderFormPage() {
         });
         const result = await response.json();
         if (result.status === 'success') {
-            M.toast({ html: 'Orden de venta creada con éxito!' });
+            M.toast({ html: `Orden de venta creada con éxito! Folio: ${result.data.folio}` });
             window.location.href = 'index.php?page=orders';
         } else {
             M.toast({ html: `Error: ${result.message}` });
@@ -1071,7 +1242,10 @@ async function handleOrderFormPage() {
     });
 
     await fetchData();
-    addItemRow();
+    const populated = populateFormFromReference();
+    if (!populated) {
+        addItemRow();
+    }
     M.Datepicker.init(document.querySelectorAll('.datepicker'), { format: 'yyyy-mm-dd', autoClose: true });
 }
 
@@ -1201,7 +1375,7 @@ function handleDocumentViewPage() {
 
     const init = async () => {
         await fetchSatCatalogs();
-        await loadInvoiceData();
+        await loadDocumentData();
     };
 
     // --- Event Listener for Cancel Button ---
@@ -1242,6 +1416,12 @@ function handleDocumentViewPage() {
     const paymentForm = document.getElementById('form-payment');
     const paymentsHistoryBody = document.getElementById('payments-history-body');
     const paymentModal = M.Modal.getInstance(document.getElementById('modal-payment'));
+
+    // Initialize datepicker for the payment modal
+    M.Datepicker.init(document.querySelector('#payment-date'), {
+        format: 'yyyy-mm-dd',
+        autoClose: true
+    });
 
     const loadPayments = async () => {
         try {
