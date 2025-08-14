@@ -194,5 +194,23 @@ CREATE TABLE `sat_payment_methods` (
   PRIMARY KEY (`key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `postal_codes`
+--
+
+CREATE TABLE `postal_codes` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `d_codigo` varchar(10) NOT NULL,
+  `d_asenta` varchar(255) NOT NULL,
+  `d_tipo_asenta` varchar(100) NOT NULL,
+  `d_mnpio` varchar(255) NOT NULL,
+  `d_estado` varchar(255) NOT NULL,
+  `d_ciudad` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_d_codigo` (`d_codigo`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 
 COMMIT;
