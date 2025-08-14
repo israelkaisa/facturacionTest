@@ -1,4 +1,4 @@
-<div>
+<div id="order-form-page">
     <h4>Crear Nueva Orden de Venta</h4>
     <div class="card mt-4">
         <div class="card-body">

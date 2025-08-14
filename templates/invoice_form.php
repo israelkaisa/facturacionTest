@@ -1,4 +1,4 @@
-<div>
+<div id="invoice-form-page">
     <h4>Crear Nueva Factura</h4>
     <div class="card mt-4">
         <div class="card-body">

@@ -1,4 +1,4 @@
-<div>
+<div id="dashboard-page">
     <h4 class="mb-4">Resumen General</h4>
     <p class="text-medium-emphasis">Una vista rápida de la actividad de tu negocio.</p>
 

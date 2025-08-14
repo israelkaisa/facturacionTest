@@ -1,4 +1,4 @@
-<div>
+<div id="sat-catalog-page">
     <h4 id="catalog-title">Catálogo del SAT</h4>
     <p class="text-medium-emphasis">Consulta de catálogos oficiales del SAT.</p>
 

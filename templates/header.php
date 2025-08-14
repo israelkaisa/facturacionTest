@@ -6,8 +6,8 @@
     <title>Sistema de Facturación - CoreUI</title>
     <!-- CoreUI CSS -->
     <link rel="stylesheet" href="assets/coreui/css/coreui.min.css">
-    <!-- CoreUI Icons -->
-    <link rel="stylesheet" href="assets/coreui/css/coreui-icons.min.css">
+    <!-- CoreUI Icons (CDN) -->
+    <link rel="stylesheet" href="https://unpkg.com/@coreui/icons@2.0.0/css/free.min.css">
     <!-- TomSelect CSS -->
     <link rel="stylesheet" href="assets/tom-select/css/tom-select.default.css">
     <!-- DataTables CSS -->

@@ -1,4 +1,4 @@
-<div>
+<div id="quote-form-page">
     <h4>Crear Nueva Cotización</h4>
     <div class="card mt-4">
         <div class="card-body">

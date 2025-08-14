@@ -1,4 +1,4 @@
-<div>
+<div id="quotes-page">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h4>Cotizaciones</h4>
