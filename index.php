@@ -4,7 +4,7 @@ session_start();
 // Include configuration
 require_once 'src/config/config.php';
 
-$page = $_GET['page'] ?? 'invoices'; // Default page is now invoices
+$page = $_GET['page'] ?? 'dashboard'; // Default page is now dashboard
 $is_logged_in = isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true;
 
 // Handle logout action
@@ -23,7 +23,7 @@ if (!$is_logged_in && $page !== 'login') {
 
 // If user is logged in, they cannot access the login page
 if ($is_logged_in && $page === 'login') {
-    header('Location: index.php?page=invoices');
+    header('Location: index.php?page=dashboard');
     exit();
 }
 

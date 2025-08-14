@@ -115,5 +115,15 @@ class Customer {
             return false;
         }
     }
+
+    /**
+     * Count all customers
+     * @return int
+     */
+    public function countAll() {
+        $this->db->query("SELECT COUNT(*) as count FROM customers");
+        $result = $this->db->single();
+        return $result ? (int)$result['count'] : 0;
+    }
 }
 ?>
