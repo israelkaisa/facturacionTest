@@ -19,9 +19,10 @@
 <header>
     <nav class="blue-grey darken-4">
         <div class="nav-wrapper container">
-            <a href="index.php" class="brand-logo">Facturación</a>
+            <a href="index.php?page=dashboard" class="brand-logo">Facturación</a>
             <a href="#" data-target="mobile-nav" class="sidenav-trigger"><i class="material-icons">menu</i></a>
             <ul class="right hide-on-med-and-down">
+                <li><a href="index.php?page=dashboard">Dashboard</a></li>
                 <li><a href="index.php?page=quotes">Cotizaciones</a></li>
                 <li><a href="index.php?page=orders">Órdenes de Venta</a></li>
                 <li><a href="index.php?page=invoices">Facturas</a></li>
@@ -42,6 +43,7 @@
     </ul>
 
     <ul class="sidenav" id="mobile-nav">
+        <li><a href="index.php?page=dashboard">Dashboard</a></li>
         <li><a href="index.php?page=quotes">Cotizaciones</a></li>
         <li><a href="index.php?page=orders">Órdenes de Venta</a></li>
         <li><a href="index.php?page=invoices">Facturas</a></li>

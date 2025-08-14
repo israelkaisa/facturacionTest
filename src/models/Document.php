@@ -166,6 +166,23 @@ class Document {
     }
 
     /**
+     * Get the most recent documents, regardless of type.
+     * @param int $limit The number of recent documents to fetch.
+     * @return array
+     */
+    public function getRecent($limit = 5) {
+        $this->db->query("
+            SELECT d.id, d.folio, d.type, d.total, d.status, d.created_at, c.name as customer_name
+            FROM documents d
+            JOIN customers c ON d.customer_id = c.id
+            ORDER BY d.created_at DESC
+            LIMIT :limit
+        ");
+        $this->db->bind(':limit', $limit, PDO::PARAM_INT);
+        return $this->db->resultSet();
+    }
+
+    /**
      * Generates a random folio string (3 letters, 10 numbers).
      * @return string The generated folio.
      */

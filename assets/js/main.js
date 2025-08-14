@@ -38,7 +38,93 @@ document.addEventListener('DOMContentLoaded', function() {
     if (document.getElementById('document-view-page')) {
         handleDocumentViewPage();
     }
+    if (document.getElementById('dashboard-page')) {
+        handleDashboardPage();
+    }
 });
+
+/**
+ * Handles all logic for the Dashboard page
+ */
+function handleDashboardPage() {
+    const apiUrl = `${API_BASE_URL}dashboard.php`;
+
+    const customerCountEl = document.getElementById('customer-count-stat');
+    const productCountEl = document.getElementById('product-count-stat');
+    const recentDocsBody = document.getElementById('recent-documents-body');
+    const loadingRow = document.getElementById('loading-docs-row');
+
+    const loadDashboardData = async () => {
+        try {
+            const response = await fetch(apiUrl);
+            if (response.status === 401) { // Handle unauthorized access
+                M.toast({ html: 'Sesión expirada. Redirigiendo al login.' });
+                setTimeout(() => window.location.href = 'index.php?page=login', 2000);
+                return;
+            }
+            const result = await response.json();
+
+            if (result.status === 'success') {
+                const data = result.data;
+
+                // Update stat cards
+                customerCountEl.textContent = data.customer_count;
+                productCountEl.textContent = data.product_count;
+
+                // Update recent documents table
+                if (data.recent_documents && data.recent_documents.length > 0) {
+                    recentDocsBody.innerHTML = data.recent_documents.map(doc => {
+                        let statusColor = '';
+                        switch (doc.status) {
+                            case 'paid':
+                            case 'completed':
+                                statusColor = 'green';
+                                break;
+                            case 'cancelled':
+                                statusColor = 'red';
+                                break;
+                            case 'sent':
+                            case 'draft':
+                                statusColor = 'blue';
+                                break;
+                            default:
+                                statusColor = 'grey';
+                        }
+
+                        return `
+                            <tr>
+                                <td><a href="index.php?page=document_view&id=${doc.id}">${doc.folio}</a></td>
+                                <td>${doc.type.charAt(0).toUpperCase() + doc.type.slice(1)}</td>
+                                <td>${doc.customer_name}</td>
+                                <td><span class="new badge ${statusColor}" data-badge-caption="${doc.status}"></span></td>
+                                <td class="right-align">$${parseFloat(doc.total).toFixed(2)}</td>
+                                <td>${new Date(doc.created_at).toLocaleDateString()}</td>
+                            </tr>
+                        `;
+                    }).join('');
+                } else {
+                    if (loadingRow) {
+                       loadingRow.innerHTML = '<td colspan="6" class="center-align">No hay documentos recientes.</td>';
+                    }
+                }
+                 M.AutoInit(); // Re-init Materialize components like badges
+            } else {
+                M.toast({ html: `Error al cargar el dashboard: ${result.message}` });
+                customerCountEl.textContent = 'Error';
+                productCountEl.textContent = 'Error';
+                if(loadingRow) loadingRow.innerHTML = '<td colspan="6" class="center-align">Error al cargar documentos.</td>';
+            }
+        } catch (error) {
+            console.error('Error fetching dashboard data:', error);
+            M.toast({ html: 'Error de red al cargar el dashboard.' });
+            customerCountEl.textContent = 'Error';
+            productCountEl.textContent = 'Error';
+            if(loadingRow) loadingRow.innerHTML = '<td colspan="6" class="center-align">Error de conexión.</td>';
+        }
+    };
+
+    loadDashboardData();
+}
 
 /**
  * Handles all logic for the SAT Catalog View page

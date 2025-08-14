@@ -100,5 +100,15 @@ class Product {
             return false;
         }
     }
+
+    /**
+     * Count all products
+     * @return int
+     */
+    public function countAll() {
+        $this->db->query("SELECT COUNT(*) as count FROM products");
+        $result = $this->db->single();
+        return $result ? (int)$result['count'] : 0;
+    }
 }
 ?>
