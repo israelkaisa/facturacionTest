@@ -1,16 +1,22 @@
-<div id="sat-catalog-page">
+<div>
     <h4 id="catalog-title">Catálogo del SAT</h4>
-    <p>Consulta de catálogos oficiales del SAT.</p>
+    <p class="text-medium-emphasis">Consulta de catálogos oficiales del SAT.</p>
 
-    <table id="catalog-table" class="striped responsive-table">
-        <thead>
-            <tr>
-                <th>Clave</th>
-                <th>Valor</th>
-            </tr>
-        </thead>
-        <tbody id="catalog-table-body">
-            <!-- Rows will be inserted by JavaScript -->
-        </tbody>
-    </table>
+    <div class="card mt-4">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table id="catalog-table" class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Clave</th>
+                            <th>Valor</th>
+                        </tr>
+                    </thead>
+                    <tbody id="catalog-table-body">
+                        <!-- Rows will be inserted by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>

@@ -1,142 +1,125 @@
 const API_BASE_URL = 'api/';
 
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize all Materialize components
-    M.AutoInit();
-    // Initialize dropdowns specifically
-    var dropdowns = document.querySelectorAll('.dropdown-trigger');
-    M.Dropdown.init(dropdowns);
+/**
+ * Creates and displays a Bootstrap/CoreUI toast notification.
+ * @param {string} message - The message to display.
+ * @param {string} type - The type of toast ('success', 'error', 'warning').
+ */
+function showToast(message, type = 'success') {
+    const toastContainer = document.querySelector('.toast-container');
+    if (!toastContainer) return;
 
-    // Check which page is currently active
-    if (document.getElementById('customers-page')) {
-        handleCustomersPage();
-    }
-    if (document.getElementById('products-page')) {
-        handleProductsPage();
-    }
-    if (document.getElementById('sat-catalog-page')) {
-        handleSatCatalogPage();
-    }
-    if (document.getElementById('invoices-page')) {
-        handleInvoicesPage();
-    }
-    if (document.getElementById('invoice-form-page')) {
-        handleInvoiceFormPage();
-    }
-    if (document.getElementById('quotes-page')) {
-        handleQuotesPage();
-    }
-    if (document.getElementById('quote-form-page')) {
-        handleQuoteFormPage();
-    }
-    if (document.getElementById('orders-page')) {
-        handleOrdersPage();
-    }
-    if (document.getElementById('order-form-page')) {
-        handleOrderFormPage();
-    }
-    if (document.getElementById('document-view-page')) {
-        handleDocumentViewPage();
-    }
-    if (document.getElementById('dashboard-page')) {
-        handleDashboardPage();
-    }
+    let bgClass = 'bg-success';
+    if (type === 'error') bgClass = 'bg-danger';
+    if (type === 'warning') bgClass = 'bg-warning';
+
+    const toastEl = document.createElement('div');
+    toastEl.classList.add('toast', bgClass, 'text-white');
+    toastEl.setAttribute('role', 'alert');
+    toastEl.setAttribute('aria-live', 'assertive');
+    toastEl.setAttribute('aria-atomic', 'true');
+    toastEl.innerHTML = `
+        <div class="toast-body">${message}</div>
+    `;
+
+    toastContainer.appendChild(toastEl);
+
+    const toast = new coreui.Toast(toastEl, {
+        delay: 5000
+    });
+    toast.show();
+
+    // Remove the toast from DOM after it's hidden
+    toastEl.addEventListener('hidden.coreui.toast', () => {
+        toastEl.remove();
+    });
+}
+
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Page-specific handlers
+    const pageId = document.body.querySelector('div[id$="-page"]')?.id;
+
+    if (document.getElementById('customers-page')) handleCustomersPage();
+    if (document.getElementById('products-page')) handleProductsPage();
+    if (document.getElementById('sat-catalog-page')) handleSatCatalogPage();
+    if (document.getElementById('invoices-page')) handleInvoicesPage();
+    if (document.getElementById('invoice-form-page')) handleDocumentFormPage('invoice');
+    if (document.getElementById('quotes-page')) handleQuotesPage();
+    if (document.getElementById('quote-form-page')) handleDocumentFormPage('quote');
+    if (document.getElementById('orders-page')) handleOrdersPage();
+    if (document.getElementById('order-form-page')) handleDocumentFormPage('order');
+    if (document.getElementById('document-view-page')) handleDocumentViewPage();
+    if (document.getElementById('dashboard-page')) handleDashboardPage();
 });
 
-/**
- * Handles all logic for the Dashboard page
- */
+// --- Page Handlers ---
+
 function handleDashboardPage() {
     const apiUrl = `${API_BASE_URL}dashboard.php`;
-
     const customerCountEl = document.getElementById('customer-count-stat');
     const productCountEl = document.getElementById('product-count-stat');
     const recentDocsBody = document.getElementById('recent-documents-body');
     const loadingRow = document.getElementById('loading-docs-row');
 
-    const loadDashboardData = async () => {
-        try {
-            const response = await fetch(apiUrl);
-            if (response.status === 401) { // Handle unauthorized access
-                M.toast({ html: 'Sesión expirada. Redirigiendo al login.' });
+    fetch(apiUrl)
+        .then(response => {
+            if (response.status === 401) {
+                showToast('Sesión expirada. Redirigiendo al login.', 'error');
                 setTimeout(() => window.location.href = 'index.php?page=login', 2000);
-                return;
+                throw new Error('Unauthorized');
             }
-            const result = await response.json();
-
+            return response.json();
+        })
+        .then(result => {
             if (result.status === 'success') {
                 const data = result.data;
-
-                // Update stat cards
                 customerCountEl.textContent = data.customer_count;
                 productCountEl.textContent = data.product_count;
 
-                // Update recent documents table
                 if (data.recent_documents && data.recent_documents.length > 0) {
                     recentDocsBody.innerHTML = data.recent_documents.map(doc => {
-                        let statusColor = '';
+                        let statusClass = 'bg-secondary';
                         switch (doc.status) {
-                            case 'paid':
-                            case 'completed':
-                                statusColor = 'green';
-                                break;
-                            case 'cancelled':
-                                statusColor = 'red';
-                                break;
-                            case 'sent':
-                            case 'draft':
-                                statusColor = 'blue';
-                                break;
-                            default:
-                                statusColor = 'grey';
+                            case 'paid': case 'completed': statusClass = 'bg-success'; break;
+                            case 'cancelled': statusClass = 'bg-danger'; break;
+                            case 'sent': case 'pending': statusClass = 'bg-info'; break;
+                            case 'draft': statusClass = 'bg-light text-dark'; break;
                         }
-
                         return `
                             <tr>
                                 <td><a href="index.php?page=document_view&id=${doc.id}">${doc.folio}</a></td>
                                 <td>${doc.type.charAt(0).toUpperCase() + doc.type.slice(1)}</td>
                                 <td>${doc.customer_name}</td>
-                                <td><span class="new badge ${statusColor}" data-badge-caption="${doc.status}"></span></td>
-                                <td class="right-align">$${parseFloat(doc.total).toFixed(2)}</td>
+                                <td><span class="badge ${statusClass}">${doc.status}</span></td>
+                                <td class="text-end">$${parseFloat(doc.total).toFixed(2)}</td>
                                 <td>${new Date(doc.created_at).toLocaleDateString()}</td>
                             </tr>
                         `;
                     }).join('');
                 } else {
-                    if (loadingRow) {
-                       loadingRow.innerHTML = '<td colspan="6" class="center-align">No hay documentos recientes.</td>';
-                    }
+                    loadingRow.innerHTML = '<td colspan="6" class="text-center">No hay documentos recientes.</td>';
                 }
-                 M.AutoInit(); // Re-init Materialize components like badges
             } else {
-                M.toast({ html: `Error al cargar el dashboard: ${result.message}` });
+                throw new Error(result.message);
+            }
+        })
+        .catch(error => {
+            if (error.message !== 'Unauthorized') {
+                console.error('Error fetching dashboard data:', error);
+                showToast(`Error al cargar el dashboard: ${error.message}`, 'error');
                 customerCountEl.textContent = 'Error';
                 productCountEl.textContent = 'Error';
-                if(loadingRow) loadingRow.innerHTML = '<td colspan="6" class="center-align">Error al cargar documentos.</td>';
+                if(loadingRow) loadingRow.innerHTML = '<td colspan="6" class="text-center">Error al cargar documentos.</td>';
             }
-        } catch (error) {
-            console.error('Error fetching dashboard data:', error);
-            M.toast({ html: 'Error de red al cargar el dashboard.' });
-            customerCountEl.textContent = 'Error';
-            productCountEl.textContent = 'Error';
-            if(loadingRow) loadingRow.innerHTML = '<td colspan="6" class="center-align">Error de conexión.</td>';
-        }
-    };
-
-    loadDashboardData();
+        });
 }
 
-/**
- * Handles all logic for the SAT Catalog View page
- */
 function handleSatCatalogPage() {
     const urlParams = new URLSearchParams(window.location.search);
-    const catalogName = urlParams.get('name'); // e.g., 'sat_cfdi_uses'
-
+    const catalogName = urlParams.get('name');
     const titleEl = document.getElementById('catalog-title');
     const tableBody = document.getElementById('catalog-table-body');
-
-    // Map catalog names to user-friendly titles
     const catalogTitles = {
         'sat_cfdi_uses': 'Catálogo de Uso de CFDI',
         'sat_payment_forms': 'Catálogo de Formas de Pago',
@@ -148,1134 +131,447 @@ function handleSatCatalogPage() {
         titleEl.textContent = 'Catálogo no válido';
         return;
     }
-
-    // Set the page title
     titleEl.textContent = catalogTitles[catalogName];
 
-    const loadCatalog = async () => {
-        try {
-            const response = await fetch(`${API_BASE_URL}sat_catalogs.php`);
-            const result = await response.json();
-
+    fetch(`${API_BASE_URL}sat_catalogs.php`)
+        .then(res => res.json())
+        .then(result => {
             if (result.status === 'success') {
-                // The API returns all catalogs, so we need to select the one we want
-                // The key in the response matches the end of the table name (e.g., 'cfdi_uses')
                 const keyName = catalogName.replace('sat_', '');
                 const catalogData = result.data[keyName];
-
                 if (catalogData) {
-                    tableBody.innerHTML = Object.entries(catalogData).map(([key, value]) => `
-                        <tr>
-                            <td>${key}</td>
-                            <td>${value}</td>
-                        </tr>
-                    `).join('');
+                    const tableRows = Object.entries(catalogData).map(([key, value]) => `<tr><td>${key}</td><td>${value}</td></tr>`).join('');
+                    tableBody.innerHTML = tableRows;
                     initializeDataTable('#catalog-table', catalogTitles[catalogName]);
                 } else {
-                     tableBody.innerHTML = `<tr><td colspan="2">No se encontraron datos para este catálogo.</td></tr>`;
+                    tableBody.innerHTML = `<tr><td colspan="2">No se encontraron datos.</td></tr>`;
                 }
             } else {
-                M.toast({ html: 'Error al cargar el catálogo.' });
+                showToast('Error al cargar el catálogo.', 'error');
             }
-        } catch (error) {
+        })
+        .catch(error => {
             console.error('Error loading catalog:', error);
-            M.toast({ html: 'Error de red al cargar el catálogo.' });
-        }
-    };
-
-    loadCatalog();
-}
-
-/**
- * Generic helper to initialize a DataTable on a given table.
- * @param {string} tableSelector - The CSS selector for the table (e.g., '#customers-table').
- * @param {string} pageTitle - The title to use for PDF/Excel exports.
- */
-function filterSelect(searchInput, selectElement, originalOptions) {
-    const searchText = searchInput.value.toLowerCase();
-    const filteredOptions = originalOptions.filter(option =>
-        option.text.toLowerCase().includes(searchText) || option.value.toLowerCase().includes(searchText)
-    );
-
-    selectElement.innerHTML = '';
-    filteredOptions.forEach(option => {
-        // We need to clone the option to avoid issues with it being moved from the original array
-        selectElement.add(option.cloneNode(true));
-    });
-
-    M.FormSelect.init(selectElement);
+            showToast('Error de red al cargar el catálogo.', 'error');
+        });
 }
 
 function initializeDataTable(tableSelector, pageTitle) {
-    // If the table has already been initialized, return the instance
     if ($.fn.DataTable.isDataTable(tableSelector)) {
         return $(tableSelector).DataTable();
     }
-
-    // Otherwise, initialize it and return the new instance
     return $(tableSelector).DataTable({
-        dom: '<"dt-header"Bf>rt<"dt-footer"ip>',
-        buttons: [
-            {
-                extend: 'excelHtml5',
-                text: '<i class="material-icons left">description</i>Excel',
-                title: pageTitle,
-                className: 'btn-small waves-effect waves-light green'
-            },
-            {
-                extend: 'pdfHtml5',
-                text: '<i class="material-icons left">picture_as_pdf</i>PDF',
-                title: pageTitle,
-                className: 'btn-small waves-effect waves-light red'
-            }
-        ],
-        language: {
-            url: '//cdn.datatables.net/plug-ins/2.0.8/i18n/es-ES.json'
-        },
+        dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' +
+             '<"row"<"col-sm-12"tr>>' +
+             '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+        language: { url: '//cdn.datatables.net/plug-ins/2.0.8/i18n/es-ES.json' },
         responsive: true
     });
 }
 
-
-/**
- * Handles all logic for the Customers page
- */
 function handleCustomersPage() {
     const apiUrl = `${API_BASE_URL}customers.php`;
-    const postalCodeApiUrl = `${API_BASE_URL}postal_code_proxy.php`; // Use the local proxy
-
+    const postalCodeApiUrl = `${API_BASE_URL}postal_code_proxy.php`;
     const form = document.getElementById('form-customer');
-    const modal = M.Modal.getInstance(document.getElementById('modal-customer'));
-    const modalTitle = document.getElementById('modal-customer-title');
-    const tableBody = document.getElementById('customers-table-body');
-
-    // Form fields
-    const customerIdField = document.getElementById('customer-id');
-    const postalCodeInput = document.getElementById('customer-postal-code');
-    const neighborhoodSelect = document.getElementById('customer-neighborhood');
-    const cityInput = document.getElementById('customer-city');
-    const stateInput = document.getElementById('customer-state');
-
+    const modalEl = document.getElementById('modal-customer');
+    const modal = new coreui.Modal(modalEl);
+    const modalTitle = document.getElementById('modal-customer-title-h5');
     const customersTable = initializeDataTable('#customers-table', 'Lista de Clientes');
 
-    // --- Fetch Address Info from API ---
-    const fetchAddressInfo = async (postalCode) => {
-        if (postalCode.length !== 5) {
-            neighborhoodSelect.innerHTML = '<option value="" disabled selected>C.P. debe tener 5 dígitos</option>';
-            M.FormSelect.init(neighborhoodSelect);
-            return;
-        }
+    const postalCodeInput = document.getElementById('customer-postal-code');
+    const neighborhoodSelectEl = document.getElementById('customer-neighborhood');
+    const cityInput = document.getElementById('customer-city');
+    const stateInput = document.getElementById('customer-state');
+    let neighborhoodTomSelect;
 
-        neighborhoodSelect.innerHTML = '<option value="" disabled selected>Buscando...</option>';
-        M.FormSelect.init(neighborhoodSelect);
+    const fetchAddressInfo = (postalCode) => {
+        if (postalCode.length !== 5) return;
+        if (neighborhoodTomSelect) neighborhoodTomSelect.destroy();
 
-        try {
-            const response = await fetch(`${postalCodeApiUrl}?cp=${postalCode}`);
-            const result = await response.json();
-
-            if (result.status === 'success' && result.data && result.data.length > 0) {
-                const data = result.data;
-                cityInput.value = data[0].municipio;
-                stateInput.value = data[0].estado;
-
-                neighborhoodSelect.innerHTML = '<option value="" disabled selected>Selecciona una colonia</option>';
-                data.forEach(item => {
-                    neighborhoodSelect.innerHTML += `<option value="${item.asentamiento}">${item.asentamiento}</option>`;
-                });
-                M.updateTextFields();
-            } else {
-                neighborhoodSelect.innerHTML = '<option value="" disabled selected>Sin resultados para este C.P.</option>';
-                cityInput.value = '';
-                stateInput.value = '';
+        neighborhoodTomSelect = new TomSelect(neighborhoodSelectEl, {
+            valueField: 'asentamiento',
+            labelField: 'asentamiento',
+            searchField: ['asentamiento'],
+            load: function(query, callback) {
+                fetch(`${postalCodeApiUrl}?cp=${postalCode}`)
+                    .then(res => res.json())
+                    .then(res => {
+                        if (res.data && res.data.length > 0) {
+                            cityInput.value = res.data[0].municipio;
+                            stateInput.value = res.data[0].estado;
+                        }
+                        callback(res.data);
+                    }).catch(() => callback());
+            },
+            render: {
+                no_results: function(data, escape) {
+                    return '<div class="no-results">No se encontraron resultados.</div>';
+                },
             }
-        } catch (error) {
-            console.error('Error fetching postal code info:', error);
-            neighborhoodSelect.innerHTML = '<option value="" disabled selected>Error al buscar</option>';
-        } finally {
-            M.FormSelect.init(neighborhoodSelect);
-        }
+        });
+        neighborhoodTomSelect.load('');
     };
 
     postalCodeInput.addEventListener('change', (e) => fetchAddressInfo(e.target.value));
 
-    // --- Load Customers ---
-    const loadCustomers = async () => {
-        try {
-            const response = await fetch(apiUrl);
-            const result = await response.json();
-            if (result.status === 'success') {
-                const tableData = result.data.map(customer => {
-                    const actions = `<a href="#" class="btn-small waves-effect waves-light blue edit-btn" data-id="${customer.id}"><i class="material-icons">edit</i></a> <a href="#" class="btn-small waves-effect waves-light red delete-btn" data-id="${customer.id}"><i class="material-icons">delete</i></a>`;
-                    const fullAddress = `${customer.street_address}, ${customer.neighborhood}`;
-                    return [customer.name, customer.rfc, customer.email, fullAddress, customer.postal_code, actions];
-                });
-                customersTable.clear().rows.add(tableData).draw();
-            } else {
-                M.toast({ html: `Error al cargar clientes: ${result.message}` });
-            }
-        } catch (error) {
-            console.error('Error loading customers:', error);
-            M.toast({ html: 'Error de red al cargar clientes' });
-        }
+    const loadCustomers = () => {
+        fetch(apiUrl)
+            .then(res => res.json())
+            .then(result => {
+                if (result.status === 'success') {
+                    const tableData = result.data.map(customer => [
+                        customer.name,
+                        customer.rfc,
+                        customer.email,
+                        `${customer.street_address}, ${customer.neighborhood}`,
+                        customer.postal_code,
+                        `<button class="btn btn-sm btn-info edit-btn" data-id="${customer.id}"><i class="cil-pencil"></i></button>
+                         <button class="btn btn-sm btn-danger delete-btn" data-id="${customer.id}"><i class="cil-trash"></i></button>`
+                    ]);
+                    customersTable.clear().rows.add(tableData).draw();
+                } else {
+                    showToast(`Error al cargar clientes: ${result.message}`, 'error');
+                }
+            })
+            .catch(err => showToast('Error de red al cargar clientes', 'error'));
     };
 
-    // --- Form Submission (Create/Update) ---
-    const submitButton = document.querySelector('#modal-customer button[type="submit"]');
-    let isSubmitting = false;
-    form.addEventListener('submit', async (e) => {
+    form.addEventListener('submit', (e) => {
         e.preventDefault();
-        if (isSubmitting) return;
-
-        isSubmitting = true;
-        submitButton.disabled = true;
-
         const formData = new FormData(form);
         const data = Object.fromEntries(formData.entries());
         const id = data.id;
-
         const method = id ? 'PUT' : 'POST';
         const url = id ? `${apiUrl}?id=${id}` : apiUrl;
 
-        try {
-            const response = await fetch(url, {
-                method: method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-            const result = await response.json();
-            if (result.status === 'success') {
-                M.toast({ html: `Cliente ${id ? 'actualizado' : 'creado'} con éxito` });
-                modal.close();
-                loadCustomers();
-            } else {
-                M.toast({ html: `Error: ${result.message}` });
-            }
-        } catch (error) {
-            console.error('Error saving customer:', error);
-            M.toast({ html: 'Error al guardar cliente' });
-        } finally {
-            isSubmitting = false;
-            submitButton.disabled = false;
-        }
-    });
-
-    // --- Event Delegation for Edit and Delete buttons ---
-    tableBody.addEventListener('click', async (e) => {
-        const target = e.target.closest('a');
-        if (!target) return;
-
-        const id = target.dataset.id;
-
-        // --- Edit Button ---
-        if (target.classList.contains('edit-btn')) {
-            e.preventDefault();
-            try {
-                const response = await fetch(`${apiUrl}?id=${id}`);
-                const result = await response.json();
+        fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
+            .then(res => res.json())
+            .then(result => {
                 if (result.status === 'success') {
-                    const customer = result.data;
-                    modalTitle.textContent = 'Editar Cliente';
-                    // Populate basic fields
-                    customerIdField.value = customer.id;
-                    form.elements['name'].value = customer.name;
-                    form.elements['rfc'].value = customer.rfc;
-                    form.elements['street_address'].value = customer.street_address;
-                    form.elements['postal_code'].value = customer.postal_code;
-                    form.elements['city'].value = customer.city;
-                    form.elements['state'].value = customer.state;
-                    form.elements['email'].value = customer.email;
-                    form.elements['phone'].value = customer.phone;
-
-                    // Fetch neighborhoods for the given postal code and then select the correct one
-                    await fetchAddressInfo(customer.postal_code);
-                    form.elements['neighborhood'].value = customer.neighborhood;
-
-                    M.FormSelect.init(neighborhoodSelect);
-                    M.updateTextFields();
-                    modal.open();
+                    showToast(`Cliente ${id ? 'actualizado' : 'creado'} con éxito`);
+                    modal.hide();
+                    loadCustomers();
+                } else {
+                    showToast(`Error: ${result.message}`, 'error');
                 }
-            } catch (error) {
-                console.error('Error fetching customer for edit:', error);
-            }
-        }
+            })
+            .catch(err => showToast('Error al guardar cliente', 'error'));
+    });
 
-        // --- Delete Button ---
-        if (target.classList.contains('delete-btn')) {
-            e.preventDefault();
-            if (confirm('¿Estás seguro de que quieres eliminar este cliente?')) {
-                try {
-                    const response = await fetch(`${apiUrl}?id=${id}`, { method: 'DELETE' });
-                    const result = await response.json();
+    document.getElementById('customers-table-body').addEventListener('click', (e) => {
+        const editBtn = e.target.closest('.edit-btn');
+        const deleteBtn = e.target.closest('.delete-btn');
+
+        if (editBtn) {
+            const id = editBtn.dataset.id;
+            fetch(`${apiUrl}?id=${id}`)
+                .then(res => res.json())
+                .then(result => {
                     if (result.status === 'success') {
-                        M.toast({ html: 'Cliente eliminado con éxito' });
-                        loadCustomers();
-                    } else {
-                        M.toast({ html: `Error: ${result.message}` });
+                        const customer = result.data;
+                        modalTitle.textContent = 'Editar Cliente';
+                        Object.keys(customer).forEach(key => {
+                            if (form.elements[key]) form.elements[key].value = customer[key];
+                        });
+                        fetchAddressInfo(customer.postal_code);
+                        setTimeout(() => {
+                           if(neighborhoodTomSelect) neighborhoodTomSelect.setValue(customer.neighborhood);
+                        }, 500); // wait for options to load
+                        modal.show();
                     }
-                } catch (error) {
-                    console.error('Error deleting customer:', error);
-                }
+                });
+        }
+
+        if (deleteBtn) {
+            if (confirm('¿Estás seguro de que quieres eliminar este cliente?')) {
+                const id = deleteBtn.dataset.id;
+                fetch(`${apiUrl}?id=${id}`, { method: 'DELETE' })
+                    .then(res => res.json())
+                    .then(result => {
+                        if (result.status === 'success') {
+                            showToast('Cliente eliminado con éxito');
+                            loadCustomers();
+                        } else {
+                            showToast(`Error: ${result.message}`, 'error');
+                        }
+                    });
             }
         }
     });
 
-    // --- Reset form when opening modal for new customer ---
-    document.querySelector('a[href="#modal-customer"]').addEventListener('click', () => {
-        modalTitle.textContent = 'Agregar Cliente';
-        form.reset();
-        customerIdField.value = '';
-        // Clear the neighborhood select
-        neighborhoodSelect.innerHTML = '<option value="" disabled selected>Ingresa un C.P. para cargar colonias</option>';
-        M.FormSelect.init(neighborhoodSelect);
+    modalEl.addEventListener('show.coreui.modal', () => {
+        // This is triggered for both new and edit
+        const id = form.elements['id'].value;
+        if (!id) { // It's a new customer
+            modalTitle.textContent = 'Agregar Cliente';
+            form.reset();
+            if (neighborhoodTomSelect) {
+                neighborhoodTomSelect.destroy();
+                neighborhoodTomSelect = null;
+            }
+             neighborhoodSelectEl.innerHTML = '<option value="" disabled selected>Ingresa un C.P. para cargar colonias</option>';
+        }
     });
 
-    // Initial load
     loadCustomers();
 }
 
-/**
- * Handles all logic for the Products page
- */
 function handleProductsPage() {
     const apiUrl = `${API_BASE_URL}products.php`;
     const satApiUrl = `${API_BASE_URL}sat_catalogs.php`;
     const form = document.getElementById('form-product');
-    const modal = M.Modal.getInstance(document.getElementById('modal-product'));
-    const modalTitle = document.getElementById('modal-product-title');
-    const productIdField = document.getElementById('product-id');
-    const unitSelect = document.getElementById('product-sat-unit-key');
-    const tableBody = document.getElementById('products-table-body');
-
-    let satCatalogs = {};
+    const modalEl = document.getElementById('modal-product');
+    const modal = new coreui.Modal(modalEl);
+    const modalTitle = document.getElementById('modal-product-title-h5');
     const productsTable = initializeDataTable('#products-table', 'Lista de Productos');
-    let originalUnitOptions = [];
+    const unitSelectEl = document.getElementById('product-sat-unit-key');
+    let unitTomSelect;
 
-    // --- Populate SAT Unit Select ---
-    const populateSatUnitSelect = () => {
-        if (satCatalogs.units) {
-            let optionsHtml = '<option value="" disabled selected>Seleccione una unidad</option>';
-            for (const [key, value] of Object.entries(satCatalogs.units)) {
-                optionsHtml += `<option value="${key}">${key} - ${value}</option>`;
-            }
-            unitSelect.innerHTML = optionsHtml;
-            originalUnitOptions = Array.from(unitSelect.options); // Store original options
-        }
-        M.FormSelect.init(unitSelect);
+    const loadInitialData = () => {
+        fetch(satApiUrl)
+            .then(res => res.json())
+            .then(result => {
+                if (result.status === 'success') {
+                    const units = result.data.units;
+                    const unitOptions = Object.entries(units).map(([key, value]) => ({ value: key, text: `${key} - ${value}` }));
+
+                    unitTomSelect = new TomSelect(unitSelectEl, {
+                        options: unitOptions,
+                        create: false,
+                        sortField: { field: "text", direction: "asc" }
+                    });
+
+                    loadProducts(units);
+                }
+            });
     };
 
-    // --- Search/Filter Logic for Unit Select ---
-    const unitSearchInput = document.getElementById('unit-key-search');
-    unitSearchInput.addEventListener('input', (e) => {
-        const searchText = e.target.value.toLowerCase();
-
-        // Filter the original options
-        const filteredOptions = originalUnitOptions.filter(option =>
-            option.text.toLowerCase().includes(searchText) || option.value.toLowerCase().includes(searchText)
-        );
-
-        // Repopulate the select with filtered options
-        unitSelect.innerHTML = '';
-        filteredOptions.forEach(option => {
-            unitSelect.add(option);
-        });
-
-        // Re-initialize the select to show the new options
-        M.FormSelect.init(unitSelect);
-    });
-
-    // --- Load Products ---
-    const loadProducts = async () => {
-        try {
-            const response = await fetch(apiUrl);
-            const result = await response.json();
-            if (result.status === 'success') {
-                const tableData = result.data.map(product => {
-                    const unitName = (satCatalogs && satCatalogs.units) ? (satCatalogs.units[product.sat_unit_key] || 'N/A') : 'N/A';
-                    const actions = `
-                        <a href="#" class="btn-small waves-effect waves-light blue edit-btn" data-id="${product.id}"><i class="material-icons">edit</i></a>
-                        <a href="#" class="btn-small waves-effect waves-light red delete-btn" data-id="${product.id}"><i class="material-icons">delete</i></a>
-                    `;
-                    return [
-                        product.sku,
-                        product.sat_product_key,
-                        product.name,
-                        `${product.sat_unit_key} - ${unitName}`,
-                        `$${parseFloat(product.price).toFixed(2)}`,
-                        actions
-                    ];
-                });
-                productsTable.clear().rows.add(tableData).draw();
-            } else {
-                M.toast({ html: `Error al cargar productos: ${result.message}` });
-            }
-        } catch (error) {
-            console.error('Error loading products:', error);
-            M.toast({ html: 'Error de red al cargar productos' });
-        }
+    const loadProducts = (units = {}) => {
+        fetch(apiUrl)
+            .then(res => res.json())
+            .then(result => {
+                if (result.status === 'success') {
+                    const tableData = result.data.map(p => [
+                        p.sku, p.sat_product_key, p.name,
+                        `${p.sat_unit_key} - ${units[p.sat_unit_key] || 'N/A'}`,
+                        `$${parseFloat(p.price).toFixed(2)}`,
+                        `<button class="btn btn-sm btn-info edit-btn" data-id="${p.id}"><i class="cil-pencil"></i></button>
+                         <button class="btn btn-sm btn-danger delete-btn" data-id="${p.id}"><i class="cil-trash"></i></button>`
+                    ]);
+                    productsTable.clear().rows.add(tableData).draw();
+                }
+            });
     };
 
-    // --- Load Initial Data (SAT Catalogs) ---
-    const loadInitialData = async () => {
-        try {
-            const response = await fetch(satApiUrl);
-            const result = await response.json();
-            if (result.status === 'success') {
-                satCatalogs = result.data;
-                populateSatUnitSelect();
-                // Now that we have the catalogs, load the products
-                loadProducts();
-            } else {
-                M.toast({ html: 'Error al cargar catálogos del SAT.' });
-            }
-        } catch (error) {
-            console.error('Error loading SAT catalogs:', error);
-            M.toast({ html: 'Error de red al cargar catálogos.' });
-        }
-    };
-
-    // --- Form Submission (Create/Update) ---
-    const submitButton = document.querySelector('#modal-product button[type="submit"]');
-    let isSubmitting = false;
-    form.addEventListener('submit', async (e) => {
+    form.addEventListener('submit', (e) => {
         e.preventDefault();
-        if (isSubmitting) return;
-
-        isSubmitting = true;
-        submitButton.disabled = true;
-
         const formData = new FormData(form);
         const data = Object.fromEntries(formData.entries());
         const id = data.id;
-
         const method = id ? 'PUT' : 'POST';
         const url = id ? `${apiUrl}?id=${id}` : apiUrl;
 
-        try {
-            const response = await fetch(url, {
-                method: method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-            const result = await response.json();
-            if (result.status === 'success') {
-                M.toast({ html: `Producto ${id ? 'actualizado' : 'creado'} con éxito` });
-                modal.close();
-                loadProducts(); // Reload products to show changes
-            } else {
-                M.toast({ html: `Error: ${result.message}` });
-            }
-        } catch (error) {
-            console.error('Error saving product:', error);
-            M.toast({ html: 'Error al guardar producto' });
-        } finally {
-            isSubmitting = false;
-            submitButton.disabled = false;
-        }
-    });
-
-    // --- Event Delegation for Edit and Delete buttons ---
-    tableBody.addEventListener('click', async (e) => {
-        const target = e.target.closest('a');
-        if (!target) return;
-
-        const id = target.dataset.id;
-
-        // --- Edit Button ---
-        if (target.classList.contains('edit-btn')) {
-            e.preventDefault();
-            try {
-                const response = await fetch(`${apiUrl}?id=${id}`);
-                const result = await response.json();
+        fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
+            .then(res => res.json())
+            .then(result => {
                 if (result.status === 'success') {
-                    const product = result.data;
-                    modalTitle.textContent = 'Editar Producto';
-                    productIdField.value = product.id;
-                    form.elements['sku'].value = product.sku;
-                    form.elements['sat_product_key'].value = product.sat_product_key;
-                    form.elements['name'].value = product.name;
-                    form.elements['sat_unit_key'].value = product.sat_unit_key;
-                    form.elements['price'].value = product.price;
-                    form.elements['tax_rate'].value = product.tax_rate;
-
-                    // Re-initialize the select to show the correct value
-                    M.FormSelect.init(unitSelect);
-                    M.updateTextFields();
-                    modal.open();
+                    showToast(`Producto ${id ? 'actualizado' : 'creado'} con éxito`);
+                    modal.hide();
+                    loadInitialData(); // Reload everything
+                } else {
+                    showToast(`Error: ${result.message}`, 'error');
                 }
-            } catch (error) {
-                console.error('Error fetching product for edit:', error);
-            }
-        }
+            });
+    });
 
-        // --- Delete Button ---
-        if (target.classList.contains('delete-btn')) {
-            e.preventDefault();
-            if (confirm('¿Estás seguro de que quieres eliminar este producto?')) {
-                try {
-                    const response = await fetch(`${apiUrl}?id=${id}`, { method: 'DELETE' });
-                    const result = await response.json();
+    document.getElementById('products-table-body').addEventListener('click', (e) => {
+        const editBtn = e.target.closest('.edit-btn');
+        const deleteBtn = e.target.closest('.delete-btn');
+
+        if (editBtn) {
+            const id = editBtn.dataset.id;
+            fetch(`${apiUrl}?id=${id}`)
+                .then(res => res.json())
+                .then(result => {
                     if (result.status === 'success') {
-                        M.toast({ html: 'Producto eliminado con éxito' });
-                        loadProducts();
-                    } else {
-                        M.toast({ html: `Error: ${result.message}` });
+                        modalTitle.textContent = 'Editar Producto';
+                        const product = result.data;
+                        Object.keys(product).forEach(key => {
+                            if (form.elements[key]) form.elements[key].value = product[key];
+                        });
+                        if (unitTomSelect) unitTomSelect.setValue(product.sat_unit_key);
+                        modal.show();
                     }
-                } catch (error) {
-                    console.error('Error deleting product:', error);
-                }
+                });
+        }
+
+        if (deleteBtn) {
+            if (confirm('¿Estás seguro de que quieres eliminar este producto?')) {
+                const id = deleteBtn.dataset.id;
+                fetch(`${apiUrl}?id=${id}`, { method: 'DELETE' })
+                    .then(res => res.json())
+                    .then(result => {
+                        if (result.status === 'success') {
+                            showToast('Producto eliminado con éxito');
+                            loadInitialData(); // Reload everything
+                        } else {
+                            showToast(`Error: ${result.message}`, 'error');
+                        }
+                    });
             }
         }
     });
 
-    // --- Reset form when opening modal for new product ---
-    document.querySelector('a[href="#modal-product"]').addEventListener('click', () => {
-        modalTitle.textContent = 'Agregar Producto';
-        form.reset();
-        productIdField.value = '';
-        form.elements['tax_rate'].value = '0.16'; // Default tax rate
-        // Ensure the select is reset to its default state
-        unitSelect.value = "";
-        M.FormSelect.init(unitSelect);
+    modalEl.addEventListener('show.coreui.modal', () => {
+        const id = form.elements['id'].value;
+        if (!id) {
+            modalTitle.textContent = 'Agregar Producto';
+            form.reset();
+            form.elements['tax_rate'].value = '0.16';
+            if (unitTomSelect) unitTomSelect.clear();
+        }
     });
 
-    // Initial load
     loadInitialData();
 }
 
-/**
- * Handles all logic for the Invoices List page
- */
-function handleInvoicesPage() {
-    const apiUrl = `${API_BASE_URL}documents.php?type=invoice`;
-    const tableBody = document.getElementById('invoices-table-body');
+function handleListPage(docType) {
+    const apiUrl = `${API_BASE_URL}documents.php?type=${docType}`;
+    const table = initializeDataTable(`#${docType}s-table`, `Lista de ${docType}s`);
 
-    const loadInvoices = async () => {
-        try {
-            const response = await fetch(apiUrl);
-            const result = await response.json();
+    fetch(apiUrl)
+        .then(res => res.json())
+        .then(result => {
             if (result.status === 'success') {
-                tableBody.innerHTML = result.data.map(invoice => `
-                    <tr>
-                        <td>${invoice.folio}</td>
-                        <td>${invoice.customer_name}</td>
-                        <td>${new Date(invoice.created_at).toLocaleDateString()}</td>
-                        <td>$${parseFloat(invoice.total).toFixed(2)}</td>
-                        <td><span class="new badge" data-badge-caption="${invoice.status}"></span></td>
-                        <td>
-                            <a href="index.php?page=document_view&id=${invoice.id}" class="btn-small waves-effect waves-light"><i class="material-icons">visibility</i></a>
-                        </td>
-                    </tr>
-                `).join('');
-                initializeDataTable('#invoices-table', 'Lista de Facturas');
-                 // Re-initialize badges if necessary
-                M.AutoInit();
-            }
-        } catch (error) {
-            console.error('Error loading invoices:', error);
-            M.toast({ html: 'Error al cargar facturas' });
-        }
-    };
-
-    loadInvoices();
-}
-
-
-/**
- * Handles all logic for the Invoice Form page
- */
-async function handleInvoiceFormPage() {
-    const form = document.getElementById('form-invoice');
-    const customerSelect = document.getElementById('invoice-customer');
-    const cfdiUseSelect = document.getElementById('invoice-cfdi-use');
-    const paymentMethodSelect = document.getElementById('invoice-payment-method');
-    const paymentFormSelect = document.getElementById('invoice-payment-form');
-    const itemsContainer = document.getElementById('invoice-items');
-    const addItemBtn = document.getElementById('add-item-btn');
-    const itemTemplate = document.getElementById('invoice-item-template');
-
-    let products = []; // To store product data
-
-    // --- Pre-population from reference document ---
-    const populateFormFromReference = () => {
-        const referenceDoc = JSON.parse(sessionStorage.getItem('referenceDocument'));
-        console.log('Reference Document:', referenceDoc); // Debugging line
-        if (referenceDoc) {
-            // Set customer
-            customerSelect.value = referenceDoc.customer_id;
-            // Set the source folio in the hidden input
-            document.getElementById('invoice-source-folio').value = referenceDoc.folio;
-
-            // Clear existing empty item rows before adding new ones
-            itemsContainer.innerHTML = '';
-
-            // Add items from reference doc
-            referenceDoc.items.forEach(item => {
-                addItemRow(item);
-            });
-
-            // Re-initialize selects after populating
-            M.FormSelect.init(document.querySelectorAll('select'));
-            updateTotals();
-
-            // Clean up sessionStorage
-            sessionStorage.removeItem('referenceDocument');
-        }
-    };
-
-    // --- Fetch initial data (Customers, Products, SAT Catalogs) ---
-    const fetchData = async () => {
-        try {
-            const [customersRes, productsRes, satRes] = await Promise.all([
-                fetch(`${API_BASE_URL}customers.php`),
-                fetch(`${API_BASE_URL}products.php`),
-                fetch(`${API_BASE_URL}sat_catalogs.php`)
-            ]);
-            const customersResult = await customersRes.json();
-            const productsResult = await productsRes.json();
-            const satResult = await satRes.json();
-
-            // Populate customers
-            if (customersResult.status === 'success') {
-                customersResult.data.forEach(c => {
-                    customerSelect.innerHTML += `<option value="${c.id}">${c.name} (${c.rfc})</option>`;
+                const tableData = result.data.map(doc => {
+                     let statusClass = 'bg-secondary';
+                        switch (doc.status) {
+                            case 'paid': case 'completed': statusClass = 'bg-success'; break;
+                            case 'cancelled': statusClass = 'bg-danger'; break;
+                            case 'sent': case 'pending': statusClass = 'bg-info'; break;
+                            case 'draft': statusClass = 'bg-light text-dark'; break;
+                        }
+                    return [
+                        doc.folio, doc.customer_name, new Date(doc.created_at).toLocaleDateString(),
+                        `$${parseFloat(doc.total).toFixed(2)}`,
+                        `<span class="badge ${statusClass}">${doc.status}</span>`,
+                        `<a href="index.php?page=document_view&id=${doc.id}" class="btn btn-sm btn-info"><i class="cil-magnifying-glass"></i></a>`
+                    ]
                 });
-            }
-
-            // Store products and populate product selects
-            if (productsResult.status === 'success') {
-                products = productsResult.data;
-            }
-
-            // Populate SAT catalogs
-            if (satResult.status === 'success') {
-                let cfdiOptions = '';
-                for (const [key, value] of Object.entries(satResult.data.cfdi_uses)) {
-                    cfdiOptions += `<option value="${key}">${key} - ${value}</option>`;
-                }
-                cfdiUseSelect.innerHTML = cfdiOptions;
-
-                let paymentFormOptions = '';
-                for (const [key, value] of Object.entries(satResult.data.payment_forms)) {
-                    paymentFormOptions += `<option value="${key}">${key} - ${value}</option>`;
-                }
-                paymentFormSelect.innerHTML = paymentFormOptions;
-            }
-
-            // Re-initialize Materialize selects
-            M.FormSelect.init(document.querySelectorAll('select'));
-
-            // Store original options for filtering
-            const originalCfdiOptions = Array.from(cfdiUseSelect.options);
-            const originalPaymentFormOptions = Array.from(paymentFormSelect.options);
-
-            // Add search listeners
-            document.getElementById('cfdi-use-search').addEventListener('input', (e) => {
-                filterSelect(e.target, cfdiUseSelect, originalCfdiOptions);
-            });
-            document.getElementById('payment-form-search').addEventListener('input', (e) => {
-                filterSelect(e.target, paymentFormSelect, originalPaymentFormOptions);
-            });
-
-        } catch (error) {
-            console.error('Error fetching initial data:', error);
-            M.toast({ html: 'Error al cargar datos iniciales del formulario.' });
-        }
-    };
-
-    // --- Add Item Row ---
-    const addItemRow = (itemToPopulate = null) => {
-        const templateContent = itemTemplate.content.cloneNode(true);
-        const productSelect = templateContent.querySelector('.product-select');
-        const quantityInput = templateContent.querySelector('.quantity');
-
-        products.forEach(p => {
-            const isSelected = itemToPopulate && p.id == itemToPopulate.product_id;
-            productSelect.innerHTML += `<option value="${p.id}" data-price="${p.price}" data-tax-rate="${p.tax_rate}" ${isSelected ? 'selected' : ''}>${p.name}</option>`;
-        });
-
-        if(itemToPopulate){
-            quantityInput.value = itemToPopulate.quantity;
-        }
-
-        itemsContainer.appendChild(templateContent);
-        M.FormSelect.init(itemsContainer.querySelectorAll('select:last-of-type'));
-
-        // Manually trigger price update for populated row
-        if(itemToPopulate){
-             const price = productSelect.options[productSelect.selectedIndex].dataset.price || 0;
-             if (itemsContainer.lastElementChild) {
-                itemsContainer.lastElementChild.querySelector('.price').value = parseFloat(price).toFixed(2);
-             }
-        }
-    };
-
-    // --- Update Totals ---
-    const updateTotals = () => {
-        let subtotal = 0;
-        let tax = 0;
-
-        itemsContainer.querySelectorAll('.item-row').forEach(row => {
-            const quantity = parseFloat(row.querySelector('.quantity').value) || 0;
-            const price = parseFloat(row.querySelector('.price').value) || 0;
-
-            const productSelect = row.querySelector('.product-select');
-            const selectedOption = productSelect.options[productSelect.selectedIndex];
-            const taxRate = parseFloat(selectedOption.dataset.taxRate) || 0;
-
-            const rowTotal = quantity * price;
-            const rowTax = rowTotal * taxRate;
-
-            row.querySelector('.total').value = rowTotal.toFixed(2);
-            subtotal += rowTotal;
-            tax += rowTax;
-        });
-
-        document.getElementById('invoice-subtotal').textContent = `$${subtotal.toFixed(2)}`;
-        document.getElementById('invoice-tax').textContent = `$${tax.toFixed(2)}`;
-        document.getElementById('invoice-total').textContent = `$${(subtotal + tax).toFixed(2)}`;
-    };
-
-    // --- Event Listeners ---
-    addItemBtn.addEventListener('click', addItemRow);
-
-    itemsContainer.addEventListener('click', (e) => {
-        if (e.target.closest('.remove-item-btn')) {
-            e.target.closest('.item-row').remove();
-            updateTotals();
-        }
-    });
-
-    itemsContainer.addEventListener('change', (e) => {
-        // When a product is selected
-        if (e.target.classList.contains('product-select')) {
-            const selectedOption = e.target.options[e.target.selectedIndex];
-            const price = selectedOption.dataset.price || 0;
-            const row = e.target.closest('.item-row');
-            row.querySelector('.price').value = parseFloat(price).toFixed(2);
-        }
-        updateTotals();
-    });
-
-    itemsContainer.addEventListener('input', (e) => {
-        // When quantity is changed
-        if (e.target.classList.contains('quantity')) {
-            updateTotals();
-        }
-    });
-
-    // --- Form Submission ---
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        // --- Date Validation ---
-        const emissionDate = new Date(form.elements['date'].value);
-        const dueDate = new Date(form.elements['due_date'].value);
-        if (dueDate < emissionDate) {
-            M.toast({ html: 'La fecha de vencimiento no puede ser anterior a la fecha de emisión.' });
-            return;
-        }
-
-        const subtotal = parseFloat(document.getElementById('invoice-subtotal').textContent.replace('$', ''));
-        const tax = parseFloat(document.getElementById('invoice-tax').textContent.replace('$', ''));
-        const total = parseFloat(document.getElementById('invoice-total').textContent.replace('$', ''));
-
-        const items = [];
-        itemsContainer.querySelectorAll('.item-row').forEach(row => {
-            const productId = row.querySelector('.product-select').value;
-            const product = products.find(p => p.id == productId);
-            const quantity = parseFloat(row.querySelector('.quantity').value);
-            const price = parseFloat(row.querySelector('.price').value);
-
-            if (product) {
-                 items.push({
-                    id: productId,
-                    quantity: quantity,
-                    price: price,
-                    tax: (quantity * price) * product.tax_rate,
-                    total: quantity * price
-                });
+                table.clear().rows.add(tableData).draw();
             }
         });
-
-        const formData = new FormData(form);
-        const data = {
-            customer_id: formData.get('customer_id'),
-            type: 'invoice', // Hardcoded for now
-            cfdi_use: formData.get('cfdi_use'),
-            payment_form: formData.get('payment_form'),
-            due_date: new Date(formData.get('due_date')).toISOString().slice(0, 10), // Format to YYYY-MM-DD
-            subtotal: subtotal,
-            tax: tax,
-            total: total,
-            items: items
-        };
-
-        try {
-            const response = await fetch(`${API_BASE_URL}documents.php`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-            const result = await response.json();
-            if (result.status === 'success') {
-                M.toast({ html: `Factura creada con éxito! Folio: ${result.data.folio}` });
-                // Redirect to the invoices list
-                window.location.href = 'index.php?page=invoices';
-            } else {
-                 M.toast({ html: `Error: ${result.message}` });
-            }
-        } catch (error) {
-            console.error('Error creating invoice:', error);
-            M.toast({ html: 'Error al crear la factura.' });
-        }
-    });
-
-    // --- Initial setup ---
-    await fetchData();
-    // Check for a reference document and populate the form
-    populateFormFromReference();
-
-    // If no items were populated from reference, add a default empty row
-    if (itemsContainer.children.length === 0) {
-        addItemRow();
-    }
-
-    // Initialize datepickers
-    M.Datepicker.init(document.querySelectorAll('.datepicker'), {
-        format: 'yyyy-mm-dd',
-        autoClose: true
-    });
 }
 
-/**
- * Handles logic for the Quotes List page
- */
-function handleQuotesPage() {
-    const apiUrl = `${API_BASE_URL}documents.php?type=quote`;
-    const tableBody = document.getElementById('quotes-table-body');
+function handleInvoicesPage() { handleListPage('invoice'); }
+function handleQuotesPage() { handleListPage('quote'); }
+function handleOrdersPage() { handleListPage('order'); }
 
-    const loadQuotes = async () => {
-        try {
-            const response = await fetch(apiUrl);
-            const result = await response.json();
-            if (result.status === 'success') {
-                tableBody.innerHTML = result.data.map(quote => `
-                    <tr>
-                        <td>${quote.folio}</td>
-                        <td>${quote.customer_name}</td>
-                        <td>${new Date(quote.created_at).toLocaleDateString()}</td>
-                        <td>$${parseFloat(quote.total).toFixed(2)}</td>
-                        <td><span class="new badge blue" data-badge-caption="${quote.status}"></span></td>
-                        <td>
-                            <a href="index.php?page=document_view&id=${quote.id}" class="btn-small waves-effect waves-light"><i class="material-icons">visibility</i></a>
-                        </td>
-                    </tr>
-                `).join('');
-                initializeDataTable('#quotes-table', 'Lista de Cotizaciones');
-                M.AutoInit();
-            }
-        } catch (error) {
-            console.error('Error loading quotes:', error);
-        }
-    };
-    loadQuotes();
-}
 
-/**
- * Handles logic for the Quote Form page
- */
-async function handleQuoteFormPage() {
-    // This is a generic form handler that can be reused.
-    // For now, I'll copy it, but in a refactor, this could be a single function.
-    const form = document.getElementById('form-quote');
-    const customerSelect = document.getElementById('quote-customer');
-    const itemsContainer = document.getElementById('quote-items');
+async function handleDocumentFormPage(docType) {
+    const form = document.getElementById(`form-${docType}`);
+    const itemsContainer = document.getElementById(`${docType}-items`);
     const addItemBtn = document.getElementById('add-item-btn');
-    const itemTemplate = document.getElementById('quote-item-template');
+    const itemTemplate = document.getElementById(`${docType}-item-template`);
+
     let products = [];
+    let tomSelectInstances = [];
+
+    const createTomSelect = (el, options) => {
+        const ts = new TomSelect(el, options);
+        tomSelectInstances.push(ts);
+        return ts;
+    };
+
+    const destroyTomSelects = () => {
+        tomSelectInstances.forEach(ts => ts.destroy());
+        tomSelectInstances = [];
+    };
 
     const fetchData = async () => {
-        const [customersRes, productsRes] = await Promise.all([
+        const [customersRes, productsRes, satRes] = await Promise.all([
             fetch(`${API_BASE_URL}customers.php`),
-            fetch(`${API_BASE_URL}products.php`)
+            fetch(`${API_BASE_URL}products.php`),
+            fetch(`${API_BASE_URL}sat_catalogs.php`)
         ]);
         const customersResult = await customersRes.json();
         const productsResult = await productsRes.json();
-        if (customersResult.status === 'success') {
-            customersResult.data.forEach(c => {
-                customerSelect.innerHTML += `<option value="${c.id}">${c.name} (${c.rfc})</option>`;
-            });
+        const satResult = await satRes.json();
+
+        if (productsResult.status === 'success') products = productsResult.data;
+
+        // Customer select
+        const customerEl = document.getElementById(`${docType}-customer`);
+        createTomSelect(customerEl, {
+            options: customersResult.data.map(c => ({ value: c.id, text: `${c.name} (${c.rfc})` })),
+            placeholder: 'Selecciona un cliente'
+        });
+
+        if (docType === 'invoice') {
+             const cfdiEl = document.getElementById('invoice-cfdi-use');
+             const paymentFormEl = document.getElementById('invoice-payment-form');
+             createTomSelect(cfdiEl, { options: Object.entries(satResult.data.cfdi_uses).map(([k, v]) => ({value: k, text: `${k} - ${v}`})) });
+             createTomSelect(paymentFormEl, { options: Object.entries(satResult.data.payment_forms).map(([k, v]) => ({value: k, text: `${k} - ${v}`})) });
         }
-        if (productsResult.status === 'success') {
-            products = productsResult.data;
-        }
-        M.FormSelect.init(document.querySelectorAll('select'));
     };
 
     const addItemRow = (itemToPopulate = null) => {
         const templateContent = itemTemplate.content.cloneNode(true);
-        const productSelect = templateContent.querySelector('.product-select');
-        const quantityInput = templateContent.querySelector('.quantity');
+        const newRow = itemsContainer.appendChild(templateContent.firstElementChild);
+        const productSelectEl = newRow.querySelector('.product-select');
 
-        products.forEach(p => {
-            const isSelected = itemToPopulate && p.id == itemToPopulate.product_id;
-            productSelect.innerHTML += `<option value="${p.id}" data-price="${p.price}" data-tax-rate="${p.tax_rate}" ${isSelected ? 'selected' : ''}>${p.name}</option>`;
+        const ts = createTomSelect(productSelectEl, {
+            options: products.map(p => ({ value: p.id, text: p.name, price: p.price, tax_rate: p.tax_rate })),
+            placeholder: 'Selecciona un producto',
+            onChange: (value) => {
+                 const selectedProduct = ts.options[value];
+                 if (selectedProduct) {
+                    const row = productSelectEl.closest('.item-row');
+                    row.querySelector('.price').value = parseFloat(selectedProduct.price).toFixed(2);
+                    updateTotals();
+                 }
+            }
         });
 
-        if(itemToPopulate){
-            quantityInput.value = itemToPopulate.quantity;
-        }
-
-        itemsContainer.appendChild(templateContent);
-        M.FormSelect.init(itemsContainer.querySelectorAll('select:last-of-type'));
-
-        if(itemToPopulate){
-             const price = productSelect.options[productSelect.selectedIndex].dataset.price || 0;
-             itemsContainer.lastChild.querySelector('.price').value = parseFloat(price).toFixed(2);
+        if (itemToPopulate) {
+            ts.setValue(itemToPopulate.product_id);
+            newRow.querySelector('.quantity').value = itemToPopulate.quantity;
         }
     };
 
     const updateTotals = () => {
-        let subtotal = 0;
-        let tax = 0;
+        let subtotal = 0, tax = 0;
         itemsContainer.querySelectorAll('.item-row').forEach(row => {
             const quantity = parseFloat(row.querySelector('.quantity').value) || 0;
             const price = parseFloat(row.querySelector('.price').value) || 0;
-            const productSelect = row.querySelector('.product-select');
-            const selectedOption = productSelect.options[productSelect.selectedIndex];
-            const taxRate = parseFloat(selectedOption.dataset.taxRate) || 0;
+            const productSelect = row.querySelector('.product-select').tomselect;
+            const taxRate = productSelect.options[productSelect.getValue()]?.tax_rate || 0;
+
             const rowTotal = quantity * price;
             const rowTax = rowTotal * taxRate;
             row.querySelector('.total').value = rowTotal.toFixed(2);
             subtotal += rowTotal;
             tax += rowTax;
         });
-        document.getElementById('quote-subtotal').textContent = `$${subtotal.toFixed(2)}`;
-        document.getElementById('quote-tax').textContent = `$${tax.toFixed(2)}`;
-        document.getElementById('quote-total').textContent = `$${(subtotal + tax).toFixed(2)}`;
-    };
 
-    addItemBtn.addEventListener('click', addItemRow);
-    itemsContainer.addEventListener('click', e => {
-        if (e.target.closest('.remove-item-btn')) {
-            e.target.closest('.item-row').remove();
-            updateTotals();
-        }
-    });
-    itemsContainer.addEventListener('change', e => {
-        if (e.target.classList.contains('product-select')) {
-            const selectedOption = e.target.options[e.target.selectedIndex];
-            const price = selectedOption.dataset.price || 0;
-            e.target.closest('.item-row').querySelector('.price').value = parseFloat(price).toFixed(2);
-        }
-        updateTotals();
-    });
-    itemsContainer.addEventListener('input', e => {
-        if (e.target.classList.contains('quantity')) {
-            updateTotals();
-        }
-    });
-
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        // --- Date Validation ---
-        const today = new Date();
-        today.setHours(0, 0, 0, 0); // Normalize today's date
-        const dueDate = new Date(form.elements['due_date'].value);
-        if (dueDate < today) {
-            M.toast({ html: 'La fecha de vencimiento no puede ser anterior a hoy.' });
-            return;
-        }
-
-        const subtotal = parseFloat(document.getElementById('quote-subtotal').textContent.replace('$', ''));
-        const tax = parseFloat(document.getElementById('quote-tax').textContent.replace('$', ''));
-        const total = parseFloat(document.getElementById('quote-total').textContent.replace('$', ''));
-        const items = [];
-        itemsContainer.querySelectorAll('.item-row').forEach(row => {
-            const productId = row.querySelector('.product-select').value;
-            const product = products.find(p => p.id == productId);
-            const quantity = parseFloat(row.querySelector('.quantity').value);
-            const price = parseFloat(row.querySelector('.price').value);
-            if (product) {
-                items.push({ id: productId, quantity, price, tax: (quantity * price) * product.tax_rate, total: quantity * price });
-            }
-        });
-        const formData = new FormData(form);
-        const data = {
-            customer_id: formData.get('customer_id'),
-            type: 'quote',
-            status: 'pending', // Add status for new quotes
-            due_date: new Date(formData.get('due_date')).toISOString().slice(0, 10), // Format to YYYY-MM-DD
-            subtotal, tax, total, items
-        };
-        const response = await fetch(`${API_BASE_URL}documents.php`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        const result = await response.json();
-        if (result.status === 'success') {
-            M.toast({ html: `Cotización creada con éxito! Folio: ${result.data.folio}` });
-            window.location.href = 'index.php?page=quotes';
-        } else {
-            M.toast({ html: `Error: ${result.message}` });
-        }
-    });
-
-    await fetchData();
-    populateFormFromReference();
-    if (itemsContainer.children.length === 0) {
-        addItemRow();
-    }
-    M.Datepicker.init(document.querySelectorAll('.datepicker'), { format: 'yyyy-mm-dd', autoClose: true });
-
-}
-
-/**
- * Handles logic for the Orders List page
- */
-function handleOrdersPage() {
-    const apiUrl = `${API_BASE_URL}documents.php?type=order`;
-    const tableBody = document.getElementById('orders-table-body');
-
-    const loadOrders = async () => {
-        try {
-            const response = await fetch(apiUrl);
-            const result = await response.json();
-            if (result.status === 'success') {
-                tableBody.innerHTML = result.data.map(order => `
-                    <tr>
-                        <td>${order.folio}</td>
-                        <td>${order.customer_name}</td>
-                        <td>${new Date(order.created_at).toLocaleDateString()}</td>
-                        <td>$${parseFloat(order.total).toFixed(2)}</td>
-                        <td><span class="new badge green" data-badge-caption="${order.status}"></span></td>
-                        <td>
-                            <a href="index.php?page=document_view&id=${order.id}" class="btn-small waves-effect waves-light"><i class="material-icons">visibility</i></a>
-                        </td>
-                    </tr>
-                `).join('');
-                initializeDataTable('#orders-table', 'Lista de Órdenes de Venta');
-                M.AutoInit();
-            }
-        } catch (error) {
-            console.error('Error loading orders:', error);
-        }
-    };
-    loadOrders();
-}
-
-/**
- * Handles logic for the Order Form page
- */
-async function handleOrderFormPage() {
-    const form = document.getElementById('form-order');
-    const customerSelect = document.getElementById('order-customer');
-    const itemsContainer = document.getElementById('order-items');
-    const addItemBtn = document.getElementById('add-item-btn');
-    const itemTemplate = document.getElementById('order-item-template');
-    let products = [];
-
-    // --- Pre-population from reference document ---
-    const populateFormFromReference = () => {
-        const referenceDoc = JSON.parse(sessionStorage.getItem('referenceDocument'));
-        if (referenceDoc) {
-            customerSelect.value = referenceDoc.customer_id;
-            // Set the source folio in the hidden input
-            const sourceFolioInput = document.getElementById('order-source-folio');
-            if(sourceFolioInput) {
-                sourceFolioInput.value = referenceDoc.folio;
-            }
-
-            itemsContainer.innerHTML = '';
-            referenceDoc.items.forEach(item => addItemRow(item));
-            M.FormSelect.init(document.querySelectorAll('select'));
-            updateTotals();
-            sessionStorage.removeItem('referenceDocument');
-            return true; // Indicate that form was populated
-        }
-        return false; // Indicate no reference doc was found
-    };
-
-    const fetchData = async () => {
-        const [customersRes, productsRes] = await Promise.all([
-            fetch(`${API_BASE_URL}customers.php`),
-            fetch(`${API_BASE_URL}products.php`)
-        ]);
-        const customersResult = await customersRes.json();
-        const productsResult = await productsRes.json();
-        if (customersResult.status === 'success') {
-            customersResult.data.forEach(c => {
-                customerSelect.innerHTML += `<option value="${c.id}">${c.name} (${c.rfc})</option>`;
-            });
-        }
-        if (productsResult.status === 'success') {
-            products = productsResult.data;
-        }
-        M.FormSelect.init(document.querySelectorAll('select'));
-    };
-
-    const addItemRow = (itemToPopulate = null) => {
-        const templateContent = itemTemplate.content.cloneNode(true);
-        const productSelect = templateContent.querySelector('.product-select');
-        const quantityInput = templateContent.querySelector('.quantity');
-
-        products.forEach(p => {
-            const isSelected = itemToPopulate && p.id == itemToPopulate.product_id;
-            productSelect.innerHTML += `<option value="${p.id}" data-price="${p.price}" data-tax-rate="${p.tax_rate}" ${isSelected ? 'selected' : ''}>${p.name}</option>`;
-        });
-
-        if(itemToPopulate){
-            quantityInput.value = itemToPopulate.quantity;
-        }
-
-        itemsContainer.appendChild(templateContent);
-        M.FormSelect.init(itemsContainer.querySelectorAll('select:last-of-type'));
-
-        if(itemToPopulate){
-             const price = productSelect.options[productSelect.selectedIndex].dataset.price || 0;
-             const priceInput = itemsContainer.querySelector('.item-row:last-child .price');
-             if(priceInput) priceInput.value = parseFloat(price).toFixed(2);
-        }
-    };
-
-    const updateTotals = () => {
-        let subtotal = 0;
-        let tax = 0;
-        itemsContainer.querySelectorAll('.item-row').forEach(row => {
-            const quantity = parseFloat(row.querySelector('.quantity').value) || 0;
-            const price = parseFloat(row.querySelector('.price').value) || 0;
-            const productSelect = row.querySelector('.product-select');
-            const selectedOption = productSelect.options[productSelect.selectedIndex];
-            const taxRate = parseFloat(selectedOption.dataset.taxRate) || 0;
-            const rowTotal = quantity * price;
-            const rowTax = rowTotal * taxRate;
-            row.querySelector('.total').value = rowTotal.toFixed(2);
-            subtotal += rowTotal;
-            tax += rowTax;
-        });
-        document.getElementById('order-subtotal').textContent = `$${subtotal.toFixed(2)}`;
-        document.getElementById('order-tax').textContent = `$${tax.toFixed(2)}`;
-        document.getElementById('order-total').textContent = `$${(subtotal + tax).toFixed(2)}`;
+        document.getElementById(`${docType}-subtotal`).textContent = `$${subtotal.toFixed(2)}`;
+        document.getElementById(`${docType}-tax`).textContent = `$${tax.toFixed(2)}`;
+        document.getElementById(`${docType}-total`).textContent = `$${(subtotal + tax).toFixed(2)}`;
     };
 
     addItemBtn.addEventListener('click', () => addItemRow());
-    itemsContainer.addEventListener('click', e => {
+
+    itemsContainer.addEventListener('click', (e) => {
         if (e.target.closest('.remove-item-btn')) {
-            e.target.closest('.item-row').remove();
+            const row = e.target.closest('.item-row');
+            const ts = row.querySelector('.product-select').tomselect;
+            if(ts) ts.destroy();
+            row.remove();
             updateTotals();
         }
     });
-    itemsContainer.addEventListener('change', e => {
-        if (e.target.classList.contains('product-select')) {
-            const selectedOption = e.target.options[e.target.selectedIndex];
-            const price = selectedOption.dataset.price || 0;
-            e.target.closest('.item-row').querySelector('.price').value = parseFloat(price).toFixed(2);
-        }
-        updateTotals();
-    });
-    itemsContainer.addEventListener('input', e => {
+
+    itemsContainer.addEventListener('input', (e) => {
         if (e.target.classList.contains('quantity')) {
             updateTotals();
         }
@@ -1284,282 +580,222 @@ async function handleOrderFormPage() {
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        // --- Date Validation ---
-        const emissionDate = new Date(form.elements['date'].value);
-        const dueDate = new Date(form.elements['due_date'].value);
-        if (dueDate < emissionDate) {
-            M.toast({ html: 'La fecha de entrega no puede ser anterior a la fecha de emisión.' });
-            return;
-        }
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
 
-        const subtotal = parseFloat(document.getElementById('order-subtotal').textContent.replace('$', ''));
-        const tax = parseFloat(document.getElementById('order-tax').textContent.replace('$', ''));
-        const total = parseFloat(document.getElementById('order-total').textContent.replace('$', ''));
         const items = [];
         itemsContainer.querySelectorAll('.item-row').forEach(row => {
             const productId = row.querySelector('.product-select').value;
             const product = products.find(p => p.id == productId);
-            const quantity = parseFloat(row.querySelector('.quantity').value);
-            const price = parseFloat(row.querySelector('.price').value);
-            if (product) {
-                items.push({ id: productId, quantity, price, tax: (quantity * price) * product.tax_rate, total: quantity * price });
+            if(product){
+                items.push({
+                    id: productId,
+                    quantity: parseFloat(row.querySelector('.quantity').value),
+                    price: parseFloat(row.querySelector('.price').value),
+                    tax: (parseFloat(row.querySelector('.quantity').value) * parseFloat(row.querySelector('.price').value)) * product.tax_rate,
+                    total: parseFloat(row.querySelector('.total').value)
+                });
             }
         });
-        const formData = new FormData(form);
-        const data = {
-            customer_id: formData.get('customer_id'),
-            type: 'order',
-            source_folio: formData.get('source_folio'),
-            due_date: new Date(formData.get('due_date')).toISOString().slice(0, 10), // Format to YYYY-MM-DD
-            subtotal, tax, total, items
+
+        const payload = {
+            ...data,
+            type: docType,
+            subtotal: parseFloat(document.getElementById(`${docType}-subtotal`).textContent.replace('$', '')),
+            tax: parseFloat(document.getElementById(`${docType}-tax`).textContent.replace('$', '')),
+            total: parseFloat(document.getElementById(`${docType}-total`).textContent.replace('$', '')),
+            items: items
         };
-        const response = await fetch(`${API_BASE_URL}documents.php`, {
+
+        fetch(`${API_BASE_URL}documents.php`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(result => {
+            if (result.status === 'success') {
+                showToast(`${docType.charAt(0).toUpperCase() + docType.slice(1)} creada con éxito! Folio: ${result.data.folio}`);
+                window.location.href = `index.php?page=${docType}s`;
+            } else {
+                showToast(`Error: ${result.message}`, 'error');
+            }
         });
-        const result = await response.json();
-        if (result.status === 'success') {
-            M.toast({ html: `Orden de venta creada con éxito! Folio: ${result.data.folio}` });
-            window.location.href = 'index.php?page=orders';
-        } else {
-            M.toast({ html: `Error: ${result.message}` });
-        }
     });
 
+    const populateFormFromReference = () => {
+        const referenceDoc = JSON.parse(sessionStorage.getItem('referenceDocument'));
+        if (referenceDoc) {
+            document.getElementById(`${docType}-customer`).tomselect.setValue(referenceDoc.customer_id);
+            if(form.elements['source_folio']) form.elements['source_folio'].value = referenceDoc.folio;
+            itemsContainer.innerHTML = '';
+            referenceDoc.items.forEach(item => addItemRow(item));
+            updateTotals();
+            sessionStorage.removeItem('referenceDocument');
+            return true;
+        }
+        return false;
+    };
+
     await fetchData();
-    const populated = populateFormFromReference();
-    if (!populated) {
+    if (!populateFormFromReference()) {
         addItemRow();
     }
-    M.Datepicker.init(document.querySelectorAll('.datepicker'), { format: 'yyyy-mm-dd', autoClose: true });
 }
 
-/**
- * Handles all logic for the Document View page
- */
 function handleDocumentViewPage() {
     const urlParams = new URLSearchParams(window.location.search);
     const documentId = urlParams.get('id');
+    if (!documentId) window.location.href = 'index.php?page=dashboard';
 
-    if (!documentId) {
-        window.location.href = 'index.php?page=invoices';
-        return;
-    }
+    let documentData; // To store current document data
 
     const loadDocumentData = async () => {
-        try {
-            const response = await fetch(`${API_BASE_URL}documents.php?id=${documentId}`);
-            const result = await response.json();
+        const response = await fetch(`${API_BASE_URL}documents.php?id=${documentId}`);
+        documentData = (await response.json()).data;
 
-            if (result.status === 'success') {
-                const doc = result.data;
+        // Populate view
+        document.getElementById('view-folio').textContent = documentData.folio;
+        const statusBadge = document.getElementById('view-status');
+        statusBadge.textContent = documentData.status;
+        statusBadge.className = 'badge'; // reset
+        let statusClass = 'bg-secondary';
+        switch (documentData.status) {
+            case 'paid': case 'completed': statusClass = 'bg-success'; break;
+            case 'cancelled': statusClass = 'bg-danger'; break;
+            case 'sent': case 'pending': statusClass = 'bg-info'; break;
+            case 'draft': statusClass = 'bg-light text-dark'; break;
+        }
+        statusBadge.classList.add(statusClass);
 
-                // --- Populate Header ---
-                document.getElementById('view-folio').textContent = doc.folio;
-                const statusBadge = document.getElementById('view-status');
-                statusBadge.textContent = doc.status;
-                statusBadge.dataset.badgeCaption = doc.status;
-                // Add color based on status
-                statusBadge.className = 'new badge'; // reset
-                if (doc.status === 'paid' || doc.status === 'completed') statusBadge.classList.add('green');
-                if (doc.status === 'cancelled') statusBadge.classList.add('red');
+        document.getElementById('view-created-at').textContent = new Date(documentData.created_at).toLocaleDateString();
+        document.getElementById('view-due-date').textContent = new Date(documentData.due_date).toLocaleDateString();
+        document.getElementById('view-customer-name').textContent = documentData.customer_name;
+        document.getElementById('view-customer-rfc').textContent = `RFC: ${documentData.rfc}`;
+        document.getElementById('view-customer-address').textContent = documentData.address;
 
-
-                document.getElementById('view-created-at').textContent = new Date(doc.created_at).toLocaleDateString();
-                document.getElementById('view-due-date').textContent = new Date(doc.due_date).toLocaleDateString();
-
-                // --- Populate Customer Info ---
-                document.getElementById('view-customer-name').textContent = doc.customer_name;
-                document.getElementById('view-customer-rfc').textContent = `RFC: ${doc.rfc}`;
-                document.getElementById('view-customer-address').textContent = doc.address;
-
-                // --- Populate Fiscal Info ---
-                document.getElementById('view-cfdi-use').textContent = `${doc.cfdi_use} - ${SAT_USO_CFDI[doc.cfdi_use] || ''}`;
-                document.getElementById('view-payment-method').textContent = `${doc.payment_method} - ${SAT_METODO_PAGO[doc.payment_method] || ''}`;
-                document.getElementById('view-payment-form').textContent = `${doc.payment_form} - ${SAT_FORMA_PAGO[doc.payment_form] || ''}`;
-                if(doc.uuid) document.getElementById('view-uuid').textContent = doc.uuid;
-
-                // --- Populate Items Table ---
-                const itemsBody = document.getElementById('view-items-table-body');
-                itemsBody.innerHTML = doc.items.map(item => `
-                    <tr>
-                        <td>${item.product_sku}</td>
-                        <td>${item.product_name}</td>
-                        <td class="center-align">${item.quantity}</td>
-                        <td class="right-align">$${parseFloat(item.unit_price).toFixed(2)}</td>
-                        <td class="right-align">$${parseFloat(item.total).toFixed(2)}</td>
-                    </tr>
-                `).join('');
-
-                // --- Populate Totals ---
-                document.getElementById('view-subtotal').textContent = `$${parseFloat(doc.subtotal).toFixed(2)}`;
-                document.getElementById('view-tax').textContent = `$${parseFloat(doc.tax).toFixed(2)}`;
-                document.getElementById('view-total').textContent = `$${parseFloat(doc.total).toFixed(2)}`;
-
-                // --- Handle button visibility based on document type and status ---
-                const generateOrderBtn = document.getElementById('generate-order-btn');
-                const generateInvoiceBtn = document.getElementById('generate-invoice-btn');
-                const recordPaymentBtn = document.getElementById('record-payment-btn');
-                const backToListBtn = document.getElementById('back-to-list-btn');
-
-                // Set back button link
-                backToListBtn.href = `index.php?page=${doc.type}s`;
-
-                if (doc.type === 'quote') {
-                    generateOrderBtn.style.display = 'inline-block';
-                }
-                if (doc.type === 'order') {
-                    generateInvoiceBtn.style.display = 'inline-block';
-                }
-                if (doc.type === 'invoice') {
-                    recordPaymentBtn.style.display = 'inline-block';
-                }
-
-                if (doc.status === 'cancelled' || doc.status === 'paid' || doc.status === 'completed') {
-                    document.getElementById('cancel-invoice-btn').classList.add('disabled');
-                    recordPaymentBtn.classList.add('disabled');
-                    generateOrderBtn.classList.add('disabled');
-                    generateInvoiceBtn.classList.add('disabled');
-                }
-
-                // --- Add event listeners for generate buttons ---
-                const handleGeneration = (targetUrl) => {
-                    sessionStorage.setItem('referenceDocument', JSON.stringify(doc));
-                    window.location.href = targetUrl;
-                };
-                generateOrderBtn.addEventListener('click', () => handleGeneration('index.php?page=order_form'));
-                generateInvoiceBtn.addEventListener('click', () => handleGeneration('index.php?page=invoice_form'));
-
-
+        if(document.getElementById('fiscal-data-section')) {
+            if(documentData.type === 'invoice') {
+                document.getElementById('fiscal-data-section').style.display = 'block';
+                document.getElementById('view-cfdi-use').textContent = documentData.cfdi_use;
+                document.getElementById('view-payment-form').textContent = documentData.payment_form;
+                if(documentData.uuid) document.getElementById('view-uuid').textContent = documentData.uuid;
             } else {
-                M.toast({ html: `Error: ${result.message}` });
-                // setTimeout(() => window.location.href = 'index.php?page=invoices', 2000);
+                document.getElementById('fiscal-data-section').style.display = 'none';
             }
-        } catch (error) {
-            console.error('Error loading invoice data:', error);
-            M.toast({ html: 'Error al cargar los datos de la factura.' });
+        }
+
+        document.getElementById('view-items-table-body').innerHTML = documentData.items.map(item => `
+            <tr>
+                <td>${item.product_sku}</td>
+                <td>${item.product_name}</td>
+                <td class="text-center">${item.quantity}</td>
+                <td class="text-end">$${parseFloat(item.unit_price).toFixed(2)}</td>
+                <td class="text-end">$${parseFloat(item.total).toFixed(2)}</td>
+            </tr>
+        `).join('');
+
+        document.getElementById('view-subtotal').textContent = `$${parseFloat(documentData.subtotal).toFixed(2)}`;
+        document.getElementById('view-tax').textContent = `$${parseFloat(documentData.tax).toFixed(2)}`;
+        document.getElementById('view-total').textContent = `$${parseFloat(documentData.total).toFixed(2)}`;
+
+        // Handle buttons
+        const generateOrderBtn = document.getElementById('generate-order-btn');
+        const generateInvoiceBtn = document.getElementById('generate-invoice-btn');
+        const recordPaymentBtn = document.getElementById('record-payment-btn');
+        const cancelBtn = document.getElementById('cancel-invoice-btn');
+
+        document.getElementById('back-to-list-btn').href = `index.php?page=${documentData.type}s`;
+
+        generateOrderBtn.style.display = documentData.type === 'quote' ? 'inline-block' : 'none';
+        generateInvoiceBtn.style.display = documentData.type === 'order' ? 'inline-block' : 'none';
+        recordPaymentBtn.style.display = documentData.type === 'invoice' ? 'inline-block' : 'none';
+
+        if (documentData.status === 'cancelled' || documentData.status === 'paid' || documentData.status === 'completed') {
+            [generateOrderBtn, generateInvoiceBtn, recordPaymentBtn, cancelBtn].forEach(btn => btn.classList.add('disabled'));
+        } else {
+             [generateOrderBtn, generateInvoiceBtn, recordPaymentBtn, cancelBtn].forEach(btn => btn.classList.remove('disabled'));
         }
     };
 
-    // --- Need SAT catalogs for display ---
-    // This is a bit inefficient, but simple. A better way would be to cache this.
-    const fetchSatCatalogs = async () => {
-        try {
-            const response = await fetch(`${API_BASE_URL}sat_catalogs.php`);
-            const result = await response.json();
-            if (result.status === 'success') {
-                // Make them globally available for this page's scope
-                window.SAT_USO_CFDI = result.data.cfdi_uses;
-                window.SAT_METODO_PAGO = result.data.payment_methods;
-                window.SAT_FORMA_PAGO = result.data.payment_forms;
-            }
-        } catch (error) {
-            console.error('Error fetching SAT catalogs:', error);
-        }
+    const handleGeneration = (targetPage) => {
+        sessionStorage.setItem('referenceDocument', JSON.stringify(documentData));
+        window.location.href = `index.php?page=${targetPage}`;
     };
+    document.getElementById('generate-order-btn').addEventListener('click', () => handleGeneration('order_form'));
+    document.getElementById('generate-invoice-btn').addEventListener('click', () => handleGeneration('invoice_form'));
 
-    const init = async () => {
-        await fetchSatCatalogs();
-        await loadDocumentData();
-    };
-
-    // --- Event Listener for Cancel Button ---
     document.getElementById('cancel-invoice-btn').addEventListener('click', async (e) => {
-        e.preventDefault();
         if (e.target.classList.contains('disabled')) return;
-
         const reason = prompt('Por favor, ingresa el motivo de la cancelación:');
-
-        if (reason) { // Proceed only if the user entered a reason
-            try {
-                const response = await fetch(`${API_BASE_URL}documents.php?action=cancel`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        id: documentId,
-                        reason: reason
-                    })
-                });
-                const result = await response.json();
+        if (reason) {
+            fetch(`${API_BASE_URL}documents.php?action=cancel`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: documentId, reason: reason })
+            })
+            .then(res => res.json())
+            .then(result => {
                 if (result.status === 'success') {
-                    M.toast({ html: 'Documento cancelado con éxito.' });
-                    // Reload data to reflect changes
+                    showToast('Documento cancelado con éxito.');
                     loadDocumentData();
                 } else {
-                    M.toast({ html: `Error: ${result.message}` });
+                    showToast(`Error: ${result.message}`, 'error');
                 }
-            } catch (error) {
-                console.error('Error cancelling document:', error);
-                M.toast({ html: 'Error al cancelar el documento.' });
-            }
+            });
         }
     });
 
-    // --- Payment Logic ---
+    // Payment Logic
     const paymentForm = document.getElementById('form-payment');
-    const paymentsHistoryBody = document.getElementById('payments-history-body');
-    const paymentModal = M.Modal.getInstance(document.getElementById('modal-payment'));
+    const paymentModalEl = document.getElementById('modal-payment');
+    const paymentModal = new coreui.Modal(paymentModalEl);
 
-    // Initialize datepicker for the payment modal
-    M.Datepicker.init(document.querySelector('#payment-date'), {
-        format: 'yyyy-mm-dd',
-        autoClose: true
-    });
-
-    const loadPayments = async () => {
-        try {
-            const response = await fetch(`${API_BASE_URL}payments.php?invoice_id=${documentId}`);
-            const result = await response.json();
-            if (result.status === 'success' && result.data.length > 0) {
-                paymentsHistoryBody.innerHTML = result.data.map(p => `
-                    <tr>
-                        <td>${new Date(p.payment_date).toLocaleDateString()}</td>
-                        <td>$${parseFloat(p.amount).toFixed(2)}</td>
-                        <td>${p.payment_method}</td>
-                        <td>${p.reference || ''}</td>
-                    </tr>
-                `).join('');
-            } else {
-                 paymentsHistoryBody.innerHTML = `<tr><td colspan="4">No se han registrado pagos.</td></tr>`;
-            }
-        } catch (error) {
-            console.error('Error loading payments:', error);
-        }
+    const loadPayments = () => {
+        fetch(`${API_BASE_URL}payments.php?invoice_id=${documentId}`)
+            .then(res => res.json())
+            .then(result => {
+                const body = document.getElementById('payments-history-body');
+                if (result.status === 'success' && result.data.length > 0) {
+                    body.innerHTML = result.data.map(p => `
+                        <tr>
+                            <td>${new Date(p.payment_date).toLocaleDateString()}</td>
+                            <td>$${parseFloat(p.amount).toFixed(2)}</td>
+                            <td>${p.payment_method}</td>
+                            <td>${p.reference || ''}</td>
+                        </tr>
+                    `).join('');
+                } else {
+                    body.innerHTML = `<tr><td colspan="4">No se han registrado pagos.</td></tr>`;
+                }
+            });
     };
 
-    paymentForm.addEventListener('submit', async (e) => {
+    paymentForm.addEventListener('submit', (e) => {
         e.preventDefault();
         const formData = new FormData(paymentForm);
         const data = Object.fromEntries(formData.entries());
-        data.invoice_id = documentId; // Add documentId to the data
+        data.invoice_id = documentId;
 
-        try {
-            const response = await fetch(`${API_BASE_URL}payments.php`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-            const result = await response.json();
+        fetch(`${API_BASE_URL}payments.php`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+        .then(res => res.json())
+        .then(result => {
             if (result.status === 'success') {
-                M.toast({ html: 'Pago registrado con éxito.' });
-                paymentModal.close();
+                showToast('Pago registrado con éxito.');
+                paymentModal.hide();
                 paymentForm.reset();
-                // Reload both invoice data (for status) and payment history
                 loadDocumentData();
                 loadPayments();
             } else {
-                M.toast({ html: `Error: ${result.message}` });
+                showToast(`Error: ${result.message}`, 'error');
             }
-        } catch (error) {
-            console.error('Error saving payment:', error);
-            M.toast({ html: 'Error al registrar el pago.' });
-        }
+        });
     });
 
-
-    init();
-    loadPayments();
+    loadDocumentData();
+    if(document.getElementById('payments-history-body')) loadPayments();
 }

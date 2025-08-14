@@ -1,30 +1,30 @@
-<div id="dashboard-page">
-    <h4>Resumen General</h4>
-    <p>Una vista rápida de la actividad de tu negocio.</p>
+<div>
+    <h4 class="mb-4">Resumen General</h4>
+    <p class="text-medium-emphasis">Una vista rápida de la actividad de tu negocio.</p>
 
     <!-- Stat Cards -->
     <div class="row">
-        <div class="col s12 m6 l6">
-            <div class="card-panel teal lighten-1 hoverable">
-                <div class="white-text">
-                    <div class="valign-wrapper">
-                        <i class="material-icons medium left">people</i>
+        <div class="col-md-6">
+            <div class="card text-white bg-info mb-3">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <i class="cil-people me-3" style="font-size: 3rem;"></i>
                         <div>
-                            <h5>Clientes Totales</h5>
-                            <h3 id="customer-count-stat" class="count-stat">...</h3>
+                            <div class="text-medium-emphasis text-uppercase fw-semibold">Clientes Totales</div>
+                            <div id="customer-count-stat" class="fs-4 fw-semibold">...</div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col s12 m6 l6">
-            <div class="card-panel blue lighten-1 hoverable">
-                <div class="white-text">
-                    <div class="valign-wrapper">
-                        <i class="material-icons medium left">inventory_2</i>
+        <div class="col-md-6">
+            <div class="card text-white bg-primary mb-3">
+                 <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <i class="cil-devices me-3" style="font-size: 3rem;"></i>
                         <div>
-                            <h5>Productos Totales</h5>
-                            <h3 id="product-count-stat" class="count-stat">...</h3>
+                            <div class="text-medium-emphasis text-uppercase fw-semibold">Productos Totales</div>
+                            <div id="product-count-stat" class="fs-4 fw-semibold">...</div>
                         </div>
                     </div>
                 </div>
@@ -33,40 +33,36 @@
     </div>
 
     <!-- Recent Documents -->
-    <div class="card">
-        <div class="card-content">
-            <span class="card-title">Documentos Recientes</span>
-            <table id="recent-documents-table" class="striped responsive-table">
-                <thead>
-                    <tr>
-                        <th>Folio</th>
-                        <th>Tipo</th>
-                        <th>Cliente</th>
-                        <th>Estado</th>
-                        <th>Total</th>
-                        <th>Fecha</th>
-                    </tr>
-                </thead>
-                <tbody id="recent-documents-body">
-                    <!-- JS will populate this -->
-                    <tr>
-                        <td colspan="6" class="center-align" id="loading-docs-row">
-                            <div class="preloader-wrapper small active">
-                                <div class="spinner-layer spinner-blue-only">
-                                    <div class="circle-clipper left">
-                                        <div class="circle"></div>
-                                    </div><div class="gap-patch">
-                                        <div class="circle"></div>
-                                    </div><div class="circle-clipper right">
-                                        <div class="circle"></div>
-                                    </div>
+    <div class="card mt-4">
+        <div class="card-header">
+            <strong>Documentos Recientes</strong>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table id="recent-documents-table" class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Folio</th>
+                            <th>Tipo</th>
+                            <th>Cliente</th>
+                            <th>Estado</th>
+                            <th>Total</th>
+                            <th>Fecha</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recent-documents-body">
+                        <!-- JS will populate this -->
+                        <tr>
+                            <td colspan="6" class="text-center" id="loading-docs-row">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Cargando...</span>
                                 </div>
-                            </div>
-                            <span class="valign">Cargando documentos...</span>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+                                <span class="ms-2">Cargando documentos...</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>

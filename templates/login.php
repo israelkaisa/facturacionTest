@@ -4,42 +4,52 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Iniciar Sesión - Sistema de Facturación</title>
-    <!-- Materialize CSS -->
-    <link rel="stylesheet" href="assets/css/materialize.min.css">
-    <!-- Google Icons -->
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <!-- Custom Login CSS -->
-    <link rel="stylesheet" href="assets/css/login.css">
+    <!-- CoreUI CSS -->
+    <link rel="stylesheet" href="assets/coreui/css/coreui.min.css">
+    <!-- CoreUI Icons -->
+    <link rel="stylesheet" href="assets/coreui/css/coreui-icons.min.css">
+    <style>
+        .login-body {
+            background-color: #f0f2f5;
+        }
+    </style>
 </head>
-<body class="login-body">
+<body class="bg-body-tertiary min-vh-100 d-flex flex-row align-items-center">
 
-<div class="card login-card">
-    <div class="card-content">
-        <span class="card-title">
-            <i class="material-icons">inventory_2</i>
-            Sistema de Facturación
-        </span>
-        <form id="form-login">
-            <div class="input-field">
-                <i class="material-icons prefix">person</i>
-                <input id="username" type="text" name="username" required>
-                <label for="username">Usuario</label>
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <div class="text-center mb-4">
+                        <i class="cil-wallet" style="font-size: 2rem;"></i>
+                        <h1 class="h4">Sistema de Facturación</h1>
+                    </div>
+                    <form id="form-login">
+                        <div class="input-group mb-3">
+                            <span class="input-group-text">
+                                <i class="cil-user"></i>
+                            </span>
+                            <input id="username" type="text" name="username" class="form-control" placeholder="Usuario" required>
+                        </div>
+                        <div class="input-group mb-4">
+                             <span class="input-group-text">
+                                <i class="cil-lock-locked"></i>
+                            </span>
+                            <input id="password" type="password" name="password" class="form-control" placeholder="Contraseña" required>
+                        </div>
+                        <div class="d-grid">
+                             <button type="submit" class="btn btn-primary">Ingresar</button>
+                        </div>
+                    </form>
+                    <div id="login-message" class="text-center text-danger mt-3"></div>
+                </div>
             </div>
-            <div class="input-field">
-                <i class="material-icons prefix">lock</i>
-                <input id="password" type="password" name="password" required>
-                <label for="password">Contraseña</label>
-            </div>
-            <div class="center-align" style="margin-top: 30px;">
-                 <button type="submit" class="btn login-btn waves-effect waves-light">Ingresar</button>
-            </div>
-        </form>
-        <div id="login-message" class="center-align red-text" style="margin-top: 15px;"></div>
+        </div>
     </div>
 </div>
 
-<!-- Materialize JS -->
-<script src="assets/js/materialize.min.js"></script>
+<!-- No external JS needed for this simple page, the script below is self-contained -->
 
 <script>
 // This is a simple, page-specific script.

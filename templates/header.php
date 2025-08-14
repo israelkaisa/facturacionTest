@@ -3,61 +3,96 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Facturación</title>
-    <!-- Materialize CSS -->
-    <link rel="stylesheet" href="assets/css/materialize.min.css">
-    <!-- Google Icons -->
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <title>Sistema de Facturación - CoreUI</title>
+    <!-- CoreUI CSS -->
+    <link rel="stylesheet" href="assets/coreui/css/coreui.min.css">
+    <!-- CoreUI Icons -->
+    <link rel="stylesheet" href="assets/coreui/css/coreui-icons.min.css">
+    <!-- TomSelect CSS -->
+    <link rel="stylesheet" href="assets/tom-select/css/tom-select.default.css">
     <!-- DataTables CSS -->
     <link rel="stylesheet" href="assets/datatables/dataTables.dataTables.min.css">
     <link rel="stylesheet" href="assets/datatables/buttons.dataTables.min.css">
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="assets/css/style.css">
+    <!-- A generic style for the body -->
+    <style>
+      body {
+        background-color: #f0f2f5;
+      }
+    </style>
 </head>
 <body>
 
-<header>
-    <nav class="blue-grey darken-4">
-        <div class="nav-wrapper container">
-            <a href="index.php?page=dashboard" class="brand-logo">Facturación</a>
-            <a href="#" data-target="mobile-nav" class="sidenav-trigger"><i class="material-icons">menu</i></a>
-            <ul class="right hide-on-med-and-down">
-                <li><a href="index.php?page=dashboard">Dashboard</a></li>
-                <li><a href="index.php?page=quotes">Cotizaciones</a></li>
-                <li><a href="index.php?page=orders">Órdenes de Venta</a></li>
-                <li><a href="index.php?page=invoices">Facturas</a></li>
-                <li><a href="index.php?page=products">Productos</a></li>
-                <li><a href="index.php?page=customers">Clientes</a></li>
-                <li><a class="dropdown-trigger" href="#!" data-target="dropdown-sat-catalogs">Catálogos SAT<i class="material-icons right">arrow_drop_down</i></a></li>
-                <li><a href="index.php?page=logout" class="btn red lighten-1">Logout</a></li>
+<!-- Sidebar -->
+<div class="sidebar sidebar-dark sidebar-fixed" id="sidebar">
+    <div class="sidebar-brand d-none d-md-flex">
+        <i class="cil-wallet sidebar-brand-full" width="118" height="46"></i>
+        <span class="ms-2">Facturación</span>
+        <i class="cil-wallet sidebar-brand-narrow" width="46" height="46"></i>
+    </div>
+    <ul class="sidebar-nav" data-coreui="navigation" data-simplebar="">
+        <li class="nav-item">
+            <a class="nav-link" href="index.php?page=dashboard">
+                <i class="nav-icon cil-speedometer"></i> Dashboard
+            </a>
+        </li>
+        <li class="nav-title">Documentos</li>
+        <li class="nav-item">
+            <a class="nav-link" href="index.php?page=quotes">
+                <i class="nav-icon cil-description"></i> Cotizaciones
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="index.php?page=orders">
+                <i class="nav-icon cil-basket"></i> Órdenes de Venta
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="index.php?page=invoices">
+                <i class="nav-icon cil-notes"></i> Facturas
+            </a>
+        </li>
+        <li class="nav-title">Gestión</li>
+        <li class="nav-item">
+            <a class="nav-link" href="index.php?page=products">
+                <i class="nav-icon cil-devices"></i> Productos
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="index.php?page=customers">
+                <i class="nav-icon cil-people"></i> Clientes
+            </a>
+        </li>
+        <li class="nav-group">
+            <a class="nav-link nav-group-toggle" href="#">
+                <i class="nav-icon cil-puzzle"></i> Catálogos SAT
+            </a>
+            <ul class="nav-group-items">
+                <li class="nav-item"><a class="nav-link" href="index.php?page=sat_catalog_view&name=sat_cfdi_uses"><span class="nav-icon"></span> Uso de CFDI</a></li>
+                <li class="nav-item"><a class="nav-link" href="index.php?page=sat_catalog_view&name=sat_payment_forms"><span class="nav-icon"></span> Formas de Pago</a></li>
+                <li class="nav-item"><a class="nav-link" href="index.php?page=sat_catalog_view&name=sat_payment_methods"><span class="nav-icon"></span> Métodos de Pago</a></li>
+                <li class="nav-item"><a class="nav-link" href="index.php?page=sat_catalog_view&name=sat_units"><span class="nav-icon"></span> Unidades</a></li>
+            </ul>
+        </li>
+    </ul>
+    <button class="sidebar-toggler" type="button" data-coreui-toggle="unfoldable"></button>
+</div>
+
+<!-- Main Content -->
+<div class="wrapper d-flex flex-column min-vh-100 bg-light">
+    <header class="header header-sticky mb-4">
+        <div class="container-fluid">
+            <button class="header-toggler px-md-4 me-md-3" type="button" onclick="coreui.Sidebar.getInstance(document.querySelector('#sidebar')).toggle()">
+                <i class="cil-menu"></i>
+            </button>
+            <ul class="header-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="index.php?page=logout">
+                        <i class="cil-account-logout"></i> Logout
+                    </a>
+                </li>
             </ul>
         </div>
-    </nav>
-
-    <!-- Dropdown Structure -->
-    <ul id="dropdown-sat-catalogs" class="dropdown-content">
-        <li><a href="index.php?page=sat_catalog_view&name=sat_cfdi_uses">Uso de CFDI</a></li>
-        <li><a href="index.php?page=sat_catalog_view&name=sat_payment_forms">Formas de Pago</a></li>
-        <li><a href="index.php?page=sat_catalog_view&name=sat_payment_methods">Métodos de Pago</a></li>
-        <li><a href="index.php?page=sat_catalog_view&name=sat_units">Unidades de Medida</a></li>
-    </ul>
-
-    <ul class="sidenav" id="mobile-nav">
-        <li><a href="index.php?page=dashboard">Dashboard</a></li>
-        <li><a href="index.php?page=quotes">Cotizaciones</a></li>
-        <li><a href="index.php?page=orders">Órdenes de Venta</a></li>
-        <li><a href="index.php?page=invoices">Facturas</a></li>
-        <li><a href="index.php?page=products">Productos</a></li>
-        <li><a href="index.php?page=customers">Clientes</a></li>
-        <li class="divider"></li>
-        <li><a class="subheader">Catálogos del SAT</a></li>
-        <li><a href="index.php?page=sat_catalog_view&name=sat_cfdi_uses">Uso de CFDI</a></li>
-        <li><a href="index.php?page=sat_catalog_view&name=sat_payment_forms">Formas de Pago</a></li>
-        <li><a href="index.php?page=sat_catalog_view&name=sat_payment_methods">Métodos de Pago</a></li>
-        <li><a href="index.php?page=sat_catalog_view&name=sat_units">Unidades de Medida</a></li>
-        <li class="divider"></li>
-        <li><a href="index.php?page=logout">Cerrar Sesión</a></li>
-    </ul>
-</header>
-
-<main class="container">
+    </header>
+    <div class="body flex-grow-1 px-3">
+        <div class="container-lg">
+            <!-- The main content from other PHP files will be injected here -->
